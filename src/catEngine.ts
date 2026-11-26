@@ -1,6 +1,7 @@
+import { paintMacBookLegend } from './macbookLegend';
 import {
-  KEYBOARD_KEYS_65,
-  KEYBOARD_KEYS_108,
+  KEYBOARD_LAYOUTS,
+  normalizeKeyboardLayout,
   getKeyboardLayout,
   type KeySpec,
   type KeyboardLayoutId,
@@ -580,7 +581,7 @@ export class KuroCatEngine {
       this.kbCenterX = isBigFish ? 234 : 214;
       this.kbCenterY = 353;
       this.kbWidth = 266;
-      this.kbHeight = 74;
+      this.kbHeight = this.keyboardLayout === 'macbook' ? 88 : 74;
       this.kbTiltRad = (3.4 * Math.PI) / 180;
       this.mouseBaseX = isBigFish ? 72 : 54;
       this.mouseBaseY = isBigFish ? 322 : 334;
@@ -621,7 +622,7 @@ export class KuroCatEngine {
   }
 
   public setKeyboardConfig(layout: KeyboardLayoutId, orientation: KeyboardOrientation): void {
-    const nextLayout: KeyboardLayoutId = layout === '108' ? '108' : '65';
+    const nextLayout: KeyboardLayoutId = normalizeKeyboardLayout(layout);
     const nextOrientation: KeyboardOrientation = orientation === 'viewer' ? 'viewer' : 'cat';
     const layoutChanged = this.keyboardLayout !== nextLayout;
     this.keyboardLayout = nextLayout;
@@ -838,12 +839,9 @@ export class KuroCatEngine {
     if (!ctx) throw new Error('Could not initialize 2D canvas context');
     this.ctx = ctx;
 
-    for (const k of KEYBOARD_KEYS_65) {
-      this.keyAnims.set(k.id, { pressed: false, pressAmount: 0, lastHitAt: -10000 });
-    }
-    for (const k of KEYBOARD_KEYS_108) {
-      if (!this.keyAnims.has(k.id)) {
-        this.keyAnims.set(k.id, { pressed: false, pressAmount: 0, lastHitAt: -10000 });
+    for (const layout of Object.values(KEYBOARD_LAYOUTS)) {
+      for (const key of layout.keys) {
+        this.keyAnims.set(key.id, { pressed: false, pressAmount: 0, lastHitAt: -10000 });
       }
     }
 
@@ -1690,7 +1688,7 @@ export class KuroCatEngine {
     if (isCatFacing && rY <= 0.1) {
       rowPos = rY + 0.68;
     } else if (!isCatFacing && rY + rSpan >= layout.totalRows - 0.1) {
-      rowPos = rY + rSpan - 0.68;
+      rowPos = rY + rSpan - Math.min(0.68, rSpan / 2 + 0.18);
     }
     return this.projectKeyboardPoint(uClamped, rowPos);
   }
@@ -3691,6 +3689,7 @@ export class KuroCatEngine {
   private drawKeyboard(ctx: CanvasRenderingContext2D): void {
     const layout = getKeyboardLayout(this.keyboardLayout);
     const isCatFacing = this.keyboardOrientation === 'cat';
+    const mac = layout.id === 'macbook';
     const is108 = this.keyboardLayout === '108';
     const padX = 7;
     const padY = 6;
@@ -3736,8 +3735,8 @@ export class KuroCatEngine {
       const y = -innerH / 2 + screenRowTop * rowH + gap * 0.5 + press * 2.0;
       const h = rSpan * rowH - gap - 0.8;
 
-      let topColor = '#f8f8f5';
-      let sideColor = '#d0d2cc';
+      let topColor = mac ? '#27282c' : '#f8f8f5';
+      let sideColor = mac ? '#141519' : '#d0d2cc';
       if (press > 0.14) {
         topColor = this.customSkin
           ? this.customSkin.accentColor
@@ -3766,7 +3765,7 @@ export class KuroCatEngine {
 
       // When overdrawing an animated key onto the cached base, paint the inner keybed strip behind it
       if (press > 0.01) {
-        targetCtx.fillStyle = '#d4d6d1';
+        targetCtx.fillStyle = mac ? '#35363b' : '#d4d6d1';
         targetCtx.fillRect(x - 0.4, -innerH / 2 + screenRowTop * rowH + gap * 0.5 - 0.4, w + 0.8, h + 3.8);
       }
 
@@ -3794,6 +3793,14 @@ export class KuroCatEngine {
         targetCtx.restore();
       }
 
+      if (mac) {
+        targetCtx.save();
+        targetCtx.translate(x + w / 2, y + (h - 0.9) / 2);
+        paintMacBookLegend(targetCtx, key, w, h - 0.9, isCatFacing,
+          press > 0.14 || isTailSelected ? '#111214' : '#f1f1f3');
+        targetCtx.restore();
+        return;
+      }
       const legend = key.id === 'space' ? (isTailSelected ? '␣' : '') : key.id === 'esc' ? 'Esc' : key.label;
       if (legend) {
         const isWideWord = legend.length >= 3;
@@ -3861,14 +3868,14 @@ export class KuroCatEngine {
           cg.fill();
           cg.restore();
 
-          cg.fillStyle = '#24262c';
+          cg.fillStyle = mac ? '#a5a8b0' : '#24262c';
           cg.strokeStyle = '#363840';
           cg.lineWidth = 1.1;
           this.trapezoidPath(cg, topHalfW, botHalfW, -halfH, halfH, 6.5);
           cg.fill();
           cg.stroke();
 
-          cg.fillStyle = '#d4d6d1';
+          cg.fillStyle = mac ? '#35363b' : '#d4d6d1';
           this.trapezoidPath(cg, topHalfW - 5, botHalfW - 5, -halfH + 4, halfH - 4, 3.5);
           cg.fill();
 
@@ -3901,14 +3908,14 @@ export class KuroCatEngine {
       ctx.fill();
       ctx.restore();
 
-      ctx.fillStyle = '#24262c';
+      ctx.fillStyle = mac ? '#a5a8b0' : '#24262c';
       ctx.strokeStyle = pickerAccentTop;
       ctx.lineWidth = 2.0;
       this.trapezoidPath(ctx, topHalfW, botHalfW, -halfH, halfH, 6.5);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = '#d4d6d1';
+      ctx.fillStyle = mac ? '#35363b' : '#d4d6d1';
       this.trapezoidPath(ctx, topHalfW - 5, botHalfW - 5, -halfH + 4, halfH - 4, 3.5);
       ctx.fill();
 
