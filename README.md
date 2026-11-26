@@ -10,6 +10,17 @@
 
 参考机型为 2021 款 14 英寸 MacBook Pro（US ANSI）。78 个键位包含独立的 Touch ID 键帽，F4、F5、F6 分别显示 Spotlight、听写和勿扰。左右方向键按本版设计使用全高键帽，上下方向键各用半高。两种视图共享键位和图标。
 
+### 白色键盘与 MacBook 触控板
+
+在设置的系统页选择 **MacBook → 白色**，即可切换为银色底壳、白色键帽及深色图标。
+在 macOS 上另外选择 **指点设备 → 触控板**。板上的光点对应真实手指，单指点按时猫爪对准落点，多指点按时整块板下压。两项设置均支持 2D、3D 及两种朝向，重启后保留。
+
+触点读取使用运行时加载的私有 MultitouchSupport 接口，仅选择内置设备。系统拒绝或接口不可用时仍可显示点击反馈。切回鼠标会停止设备读取。默认沿用黑色键盘和鼠标。
+
+| 3D 白色款 | 2D 白色款 |
+| --- | --- |
+| ![3D 白色键盘与双指触控板](docs/macbook/macbook-3d-white-trackpad-viewer.png) | ![2D 白色键盘与双指触控板](docs/macbook/macbook-2d-white-trackpad-viewer.png) |
+
 ### 安装与输入权限
 
 1. 在本分支的 **MacBook keyboard verification** 成功运行中下载 **KuroCat-MacBook-arm64**。解压 GitHub 的制品包，再解压其中的应用包，将 **KuroCat MacBook.app** 拖入“应用程序”。
@@ -259,10 +270,3 @@ KuroCat 完全免费且基于 MIT 协议开源。如果这只桌面小猫陪你�
 
 - 内置皮肤 **🐳 大肥鱼（鲸鱼娘）** 运行时素材基于 MIT 开源项目 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)（参考衍生 [QCYTSN/dsh-dafeiyu](https://github.com/QCYTSN/dsh-dafeiyu)）制作，完整许可声明见 `src/assets/dafeiyu/LICENSE-MIT.txt`。
 - 特别感谢所有参与共建与提交 PR 的社区贡献者：[@XYZliang](https://github.com/XYZliang)、[@CandySunPlus](https://github.com/CandySunPlus)（#51）、[@Jack-GPT](https://github.com/Jack-GPT)（#47, #64）、[@Mangome](https://github.com/Mangome)（#67, #68）、[@Zyred9](https://github.com/Zyred9)（#48）、[@bj-wangxiaoxiao](https://github.com/bj-wangxiaoxiao)（#65）、[@hacksmo](https://github.com/hacksmo)（#45）、[@LiMuhua](https://github.com/LiMuhua)（#75）。
-
-### 白色键盘与 MacBook 触控板
-
-在设置的系统页选择 **MacBook → 白色**，即可切换为银色底壳、白色键帽及深色图标。
-在 macOS 上另外选择 **指点设备 → 触控板**。板上的光点对应真实手指，单指点按时猫爪对准落点，多指点按时整块板下压。两项设置均支持 2D、3D 及两种朝向，重启后保留。
-
-触点读取使用运行时加载的私有 MultitouchSupport 接口，仅选择内置设备。系统拒绝或接口不可用时仍可显示点击反馈。切回鼠标会停止设备读取。默认沿用黑色键盘和鼠标。
