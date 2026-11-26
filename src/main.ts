@@ -1349,17 +1349,21 @@ async function bootstrap(): Promise<void> {
       if (settings.clickThroughLocked && !altOverride && !e.altKey) return;
       canvas.classList.add('pet-dragging');
       canvas3d.classList.add('pet-dragging');
-      void invoke('set_dragging', { dragging: true });
+      let usedFallbackDrag = false;
       try {
-        // On macOS/Linux, awaiting an IPC call before `startDragging()` loses AppKit's synchronous
-        // current NSLeftMouseDown event and causes dragging to silently fail (#59). Only Windows uses
-        // the native unclamped `start_pet_drag` loop; other platforms must invoke `startDragging()` directly.
-        if (isWindowsPlatform()) {
+        if (isWindowsPlatform() || isMacPlatform()) {
+          // Both Windows and macOS use native `start_pet_drag`, which coordinates `state.dragging`
+          // internally (via atomic `compare_exchange` on macOS). Do NOT call `set_dragging(true)`
+          // beforehand or macOS `compare_exchange(false, true)` would see `dragging == true` and abort.
           const nativeHandled = await invoke<boolean>('start_pet_drag').catch(() => false);
           if (!nativeHandled) {
+            usedFallbackDrag = true;
+            void invoke('set_dragging', { dragging: true });
             await getCurrentWindow().startDragging();
           }
         } else {
+          usedFallbackDrag = true;
+          void invoke('set_dragging', { dragging: true });
           await getCurrentWindow().startDragging();
         }
       } finally {
@@ -1367,7 +1371,9 @@ async function bootstrap(): Promise<void> {
         canvas3d.classList.remove('pet-dragging');
         engine.onMouseUp('left');
         engine3d?.onMouseUp('left');
-        void invoke('set_dragging', { dragging: false });
+        if (usedFallbackDrag) {
+          void invoke('set_dragging', { dragging: false });
+        }
         void invoke('save_window_pos');
       }
     }

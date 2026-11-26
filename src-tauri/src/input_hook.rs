@@ -1015,6 +1015,7 @@ pub mod macos_hook {
         fn CGPreflightListenEventAccess() -> bool;
         fn CGRequestListenEventAccess() -> bool;
         fn CGEventSourceFlagsState(state_id: i32) -> u64;
+        fn CGEventSourceButtonState(state_id: i32, button: u32) -> bool;
         fn CGEventTapCreate(
             tap: u32,
             place: u32,
@@ -1736,12 +1737,23 @@ pub mod macos_hook {
         }
     }
 
+    // kCGEventSourceStateCombinedSessionState = 0; works without Accessibility / Input Monitoring
+    // permissions so macOS users can always hold Option or drag the pet reliably.
+    const K_CG_EVENT_SOURCE_STATE_COMBINED_SESSION_STATE: i32 = 0;
+    const K_CG_MOUSE_BUTTON_LEFT: u32 = 0;
+
     pub fn is_alt_pressed() -> bool {
-        // kCGEventSourceStateCombinedSessionState = 0; works without Accessibility / Input Monitoring
-        // permissions so macOS users can always hold Option to temporarily interact/unlock click-through.
-        const K_CG_EVENT_SOURCE_STATE_COMBINED_SESSION_STATE: i32 = 0;
         let flags = unsafe { CGEventSourceFlagsState(K_CG_EVENT_SOURCE_STATE_COMBINED_SESSION_STATE) };
         (flags & FLAG_OPTION) != 0
+    }
+
+    pub fn is_left_mouse_down() -> bool {
+        unsafe {
+            CGEventSourceButtonState(
+                K_CG_EVENT_SOURCE_STATE_COMBINED_SESSION_STATE,
+                K_CG_MOUSE_BUTTON_LEFT,
+            )
+        }
     }
 
     fn run_event_tap_loop() {

@@ -215,8 +215,13 @@ const BODY_SLICES: Array<{ t: number; hw: number }> = [
   { t: 1.00, hw: 46 }, // cozy bottom rest
 ];
 
-const IDLE_RENDER_AFTER_MS = 3000;
-const IDLE_RENDER_PAUSE_MS = 40;
+type RenderPacingTier = 'action' | 'ambient' | 'idle' | 'sleep';
+
+const ACTION_RENDER_AFTER_MS = 2200;
+const AMBIENT_RENDER_AFTER_MS = 1800;
+const AMBIENT_FRAME_MS = 44;      // ~22.7 FPS (matches 33-45ms global cursor/mouse cadence)
+const IDLE_FRAME_MS = 66;         // ~15.2 FPS (calm awake breathing & gentle tail sway)
+const DEEP_SLEEP_FRAME_MS = 100;  // ~10.0 FPS (deep sleep loaf & slow floating Zzz)
 const KEYBOARD_HIT_HALF_WIDTH_RATIO = 0.54;
 const KEYBOARD_HIT_HALF_HEIGHT_RATIO = 0.56;
 // A tail pat is a one-shot gesture (lift 24px, then slap down). Replaying it for every keystroke of a typing
@@ -231,14 +236,18 @@ export class KuroCatEngine {
   private ctx: CanvasRenderingContext2D;
   private rafId: number | null = null;
   private idleFrameTimer: number | null = null;
-  private isIdlePacing = false;
+  private pacingTier: RenderPacingTier = 'action';
   private directRafPrevMs = 0;
+  private lastRenderMs = 0;
+  private lastRenderPerfMs = 0;
   private vsyncMs = 16.67;
   private vsyncSamples = 0;
+  private highRefreshHits = 0;
   private gameActive = false;
   private kbCacheCanvas: HTMLCanvasElement | null = null;
   private kbCacheKey = '';
-  private lastActivityAt = 0;
+  private lastActionAt = 0;
+  private lastAmbientAt = 0;
   private lastTime = 0;
   private elapsed = 0;
 
@@ -276,7 +285,7 @@ export class KuroCatEngine {
     if (this.pad.enabled === enabled) return;
     this.pad.setEnabled(enabled);
     this.syncLayoutPositions();
-    this.wakeRendering();
+    this.wakeAction();
   }
 
   public onTrackpad(points: readonly PadPoint[]): void {
@@ -286,7 +295,7 @@ export class KuroCatEngine {
       this.lastMouseMoveAt = performance.now();
       this.leftPaw.mode = 'mouse';
     }
-    this.wakeRendering();
+    this.wakeAction();
   }
 
   private padOffset(point = this.pad.target) {
@@ -332,7 +341,7 @@ export class KuroCatEngine {
   private lastDt = 1 / 60;
 
   public setPrivacyMode(active: boolean): void {
-    this.wakeRendering();
+    this.wakeAction();
     this.privacyMode = active;
     this.dafeiyu.onPrivacyModeChanged(active);
     if (active) {
@@ -350,7 +359,7 @@ export class KuroCatEngine {
 
   public onPrivacyTyping(): void {
     this.privacyTypingAt = performance.now();
-    this.wakeRendering(this.privacyTypingAt);
+    this.wakeAction(this.privacyTypingAt);
     if (this.catBreed === 'dafeiyu') {
       this.dafeiyu.onPrivacyTyping();
     }
@@ -358,7 +367,7 @@ export class KuroCatEngine {
 
   public setRenderScale(scale: number): void {
     this.renderScale = Math.max(0.2, Math.min(1.5, scale));
-    this.wakeRendering();
+    this.wakeAction();
   }
 
   public getLogicalSize(): { w: number; h: number } {
@@ -377,7 +386,7 @@ export class KuroCatEngine {
       this.catTail.heldVks.clear();
       this.catTailHeldAt.clear();
     }
-    this.wakeRendering();
+    this.wakeAction();
   }
 
   public setTailPickerActive(active: boolean, selection?: ReadonlySet<string>): void {
@@ -386,13 +395,13 @@ export class KuroCatEngine {
     if (!this.tailPickerActive) {
       this.tailPickerHoverId = null;
     }
-    this.wakeRendering();
+    this.wakeAction();
   }
 
   public setTailPickerHover(specId: string | null): void {
     if (this.tailPickerHoverId !== specId) {
       this.tailPickerHoverId = specId;
-      this.wakeRendering();
+      this.wakeAction();
     }
   }
 
@@ -671,7 +680,7 @@ export class KuroCatEngine {
       this.customSkin = null;
     }
     this.syncLayoutPositions();
-    this.wakeRendering();
+    this.wakeAction();
   }
 
   public setHeadphones(active: boolean): void {
@@ -681,7 +690,7 @@ export class KuroCatEngine {
       if (next) {
         this.headsetSpring.v += 2.2;
       }
-      this.wakeRendering();
+      this.wakeAction();
     }
   }
 
@@ -708,7 +717,7 @@ export class KuroCatEngine {
       this.rightPaw.pos = { x: this.catCenterX + 18, y: this.catBaseY };
       this.rightPaw.target = { x: this.catCenterX + 18, y: this.catBaseY };
     }
-    this.wakeRendering();
+    this.wakeAction();
   }
 
   private buildDaFeiYuLayout(): DaFeiYuLayout {
@@ -952,19 +961,28 @@ export class KuroCatEngine {
   }
 
   public resize(): void {
-    const dpr = Math.max(window.devicePixelRatio || 1, 1);
+    const dpr = Math.min(2, Math.max(window.devicePixelRatio || 1, 1));
     const cssW = Math.max(1, this.embedded ? (this.canvas.clientWidth || 420) : window.innerWidth);
     const cssH = Math.max(1, this.embedded ? (this.canvas.clientHeight || 440) : window.innerHeight);
-    this.canvas.width = Math.round(cssW * dpr);
-    this.canvas.height = Math.round(cssH * dpr);
-    this.wakeRendering();
+    const nextW = Math.round(cssW * dpr);
+    const nextH = Math.round(cssH * dpr);
+    if (this.canvas.width !== nextW || this.canvas.height !== nextH) {
+      this.canvas.width = nextW;
+      this.canvas.height = nextH;
+    }
+    this.wakeAction();
   }
 
   public start(): void {
     if (this.rafId !== null || this.idleFrameTimer !== null) return;
-    this.lastTime = this.lastActivityAt = performance.now();
+    const now = performance.now();
+    this.lastTime = now;
+    this.lastActionAt = now;
+    this.lastAmbientAt = now;
+    this.lastRenderMs = 0;
+    this.lastRenderPerfMs = 0;
     this.directRafPrevMs = 0;
-    this.isIdlePacing = false;
+    this.pacingTier = 'action';
     this.rafId = requestAnimationFrame(this.renderFrame);
   }
 
@@ -973,7 +991,10 @@ export class KuroCatEngine {
     if (this.idleFrameTimer !== null) window.clearTimeout(this.idleFrameTimer);
     this.rafId = null;
     this.idleFrameTimer = null;
-    this.isIdlePacing = false;
+    this.pacingTier = 'action';
+    this.directRafPrevMs = 0;
+    this.lastRenderMs = 0;
+    this.lastRenderPerfMs = 0;
   }
 
   public releaseCachedResources(): void {
@@ -992,26 +1013,143 @@ export class KuroCatEngine {
     this.gameActive = Boolean(active);
   }
 
+  private computePacingTier(now: number): RenderPacingTier {
+    const wakeElapsed = now - this.wakeAt;
+    const hasActiveAction =
+      now - this.lastActionAt < ACTION_RENDER_AFTER_MS ||
+      this.heldKeys.size > 0 ||
+      this.catTail.heldVks.size > 0 ||
+      this.catTail.reach > 0.02 ||
+      this.mouseLeftDown ||
+      this.mouseRightDown ||
+      this.mouseMiddleDown ||
+      this.bubbles.length > 0 ||
+      this.mouseBadges.length > 0 ||
+      this.petEnergy > 0.12 ||
+      this.isCross ||
+      this.crossAmount > 0.03 ||
+      now < this.curiousUntil ||
+      this.curiousAmount > 0.02 ||
+      (this.sleepAmount > 0.02 && this.sleepAmount < 0.98) ||
+      (wakeElapsed >= 0 && wakeElapsed < 650) ||
+      Math.abs(this.deskHopY) > 0.15 ||
+      Math.abs(this.headsetSpring.v) > 0.02 ||
+      Math.abs(this.headsetSpring.x - (this.headphonesOn ? 1 : 0)) > 0.01 ||
+      this.fxParticles.some((fx) => fx.kind !== 'z');
+    if (hasActiveAction) return 'action';
+
+    if (this.sleepAmount > 0.95) return 'sleep';
+
+    const hasAmbientMotion =
+      now - this.lastAmbientAt < AMBIENT_RENDER_AFTER_MS ||
+      this.idleAct !== null ||
+      this.isBlinking ||
+      Math.abs(this.eyeXSpring.v) > 0.02 ||
+      Math.abs(this.eyeYSpring.v) > 0.02 ||
+      Math.abs(this.faceTurnSpring.v) > 0.05;
+    if (hasAmbientMotion) return 'ambient';
+
+    return 'idle';
+  }
+
+  private getTargetIntervalMs(tier: RenderPacingTier, eco30: boolean): number {
+    switch (tier) {
+      case 'action':
+        return eco30 ? 33.33 : 16.67;
+      case 'ambient':
+        return AMBIENT_FRAME_MS;
+      case 'idle':
+        return IDLE_FRAME_MS;
+      case 'sleep':
+        return DEEP_SLEEP_FRAME_MS;
+    }
+  }
+
+  private scheduleNextFrame(tier: RenderPacingTier, sleepMs: number): void {
+    this.rafId = null;
+    this.pacingTier = tier;
+    if (this.idleFrameTimer !== null) {
+      window.clearTimeout(this.idleFrameTimer);
+    }
+    this.idleFrameTimer = window.setTimeout(() => {
+      this.idleFrameTimer = null;
+      this.rafId = requestAnimationFrame(this.renderFrame);
+    }, sleepMs);
+  }
+
   private readonly renderFrame = (now: number): void => {
     const frameId = this.rafId;
     const workStart = performance.now();
 
-    if (this.directRafPrevMs > 0 && this.vsyncSamples < 8) {
+    // Continuously adapt to VRR / ProMotion (24-120Hz) and display switches:
+    // if direct rAF ever observes >=2 short intervals (<13.5ms), lock vsyncMs down immediately
+    // so 120-240Hz displays never run uncapped even if startup happened at 60Hz (#59).
+    if (this.directRafPrevMs > 0) {
       const gap = now - this.directRafPrevMs;
       if (gap >= 3.2 && gap <= 25) {
-        this.vsyncMs = this.vsyncSamples === 0 ? gap : Math.min(this.vsyncMs, gap);
-        this.vsyncSamples += 1;
+        if (gap < 13.5) {
+          this.highRefreshHits = Math.min(4, this.highRefreshHits + 1);
+          if (this.highRefreshHits >= 2) {
+            this.vsyncMs = Math.min(this.vsyncMs, gap);
+          }
+        } else {
+          this.highRefreshHits = Math.max(0, this.highRefreshHits - 1);
+          if (this.highRefreshHits === 0) {
+            this.vsyncMs = this.vsyncSamples === 0 ? gap : this.vsyncMs * 0.75 + gap * 0.25;
+          }
+        }
+        if (this.vsyncSamples < 8) {
+          this.vsyncSamples += 1;
+        }
+      }
+    }
+
+    const eco30 = this.gameActive || this.fpsCap === 30;
+    const preTier = this.computePacingTier(now);
+    const minIntervalMs =
+      preTier === 'action'
+        ? eco30
+          ? 28
+          : 12.5
+        : preTier === 'ambient'
+          ? 36
+          : preTier === 'idle'
+            ? 56
+            : 85;
+
+    if (this.lastRenderMs > 0) {
+      const sinceLast = now - this.lastRenderMs;
+      if (sinceLast >= 0 && sinceLast < minIntervalMs) {
+        const preTargetMs = this.getTargetIntervalMs(preTier, eco30);
+        const remainingMs = preTargetMs - sinceLast;
+        if (
+          preTier === 'action' &&
+          !eco30 &&
+          (this.vsyncMs >= 13.5 || remainingMs <= this.vsyncMs + 2)
+        ) {
+          this.pacingTier = preTier;
+          this.directRafPrevMs = now;
+          this.rafId = requestAnimationFrame(this.renderFrame);
+        } else {
+          this.directRafPrevMs = 0;
+          this.scheduleNextFrame(
+            preTier,
+            Math.max(4, Math.round(remainingMs - this.vsyncMs * 0.35)),
+          );
+        }
+        return;
       }
     }
 
     const dt = Math.min(0.05, Math.max(0.001, (now - this.lastTime) / 1000));
     this.lastTime = now;
+    this.lastRenderMs = now;
+    this.lastRenderPerfMs = workStart;
     this.update(dt, now);
     this.render();
     this.onAfterRender?.();
 
     if (this.rafId !== frameId) return;
-    const active = now - this.lastActivityAt < IDLE_RENDER_AFTER_MS;
 
     if (this.sleepAmount > 0.96) {
       if (!this.sleepTrimSent) {
@@ -1022,14 +1160,15 @@ export class KuroCatEngine {
       this.sleepTrimSent = false;
     }
 
-    // Smart adaptive frame pacing:
-    // - User Eco 30 FPS or Game Eco Mode: 30 FPS cap
-    // - 60Hz normal mode: native direct rAF
-    // - 120-240Hz normal mode: 60 FPS cap
-    // - Idle awake: ~18 FPS (55ms); Deep sleep: ~12 FPS (85ms)
-    const eco30 = this.gameActive || this.fpsCap === 30;
-    if (active && (this.vsyncSamples < 8 || (!eco30 && this.vsyncMs >= 13.5))) {
-      this.isIdlePacing = false;
+    // 4-tier adaptive frame pacing:
+    // - Full action (typing, clicking, scrolling, petting, agent/mood bursts): 60 FPS (30 FPS eco)
+    //   * 60Hz normal: native direct rAF (0 timer jitter)
+    //   * 120-240Hz / ProMotion VRR normal: 60 FPS paced cap
+    // - Ambient cursor-gaze / mouse follow outside cat: ~23 FPS (44ms, matches 33-45ms IPC cadence)
+    // - Idle awake: ~15 FPS (66ms); Deep sleep: ~10 FPS (100ms)
+    const tier = this.computePacingTier(now);
+    if (tier === 'action' && !eco30 && this.vsyncMs >= 13.5) {
+      this.pacingTier = 'action';
       this.directRafPrevMs = now;
       this.rafId = requestAnimationFrame(this.renderFrame);
       return;
@@ -1037,31 +1176,40 @@ export class KuroCatEngine {
 
     this.directRafPrevMs = 0;
     const workMs = performance.now() - workStart;
-    const targetMs = active
-      ? eco30
-        ? 33.33
-        : 16.67
-      : this.sleepAmount > 0.95
-        ? 85
-        : Math.max(IDLE_RENDER_PAUSE_MS, 55);
+    const targetMs = this.getTargetIntervalMs(tier, eco30);
     const sleepMs = Math.max(4, Math.round(targetMs - workMs - this.vsyncMs * 0.35));
 
     // Pause after drawing so even a slow frame leaves CPU headroom on older hardware (Fixes #9).
-    this.rafId = null;
-    this.isIdlePacing = !active;
-    this.idleFrameTimer = window.setTimeout(() => {
-      this.idleFrameTimer = null;
-      this.isIdlePacing = false;
-      this.rafId = requestAnimationFrame(this.renderFrame);
-    }, sleepMs);
+    this.scheduleNextFrame(tier, sleepMs);
   };
 
-  private wakeRendering(now = performance.now()): void {
-    this.lastActivityAt = now;
-    if (this.idleFrameTimer === null || !this.isIdlePacing) return;
+  private wakeAction(now = performance.now()): void {
+    this.lastActionAt = Math.max(this.lastActionAt, now);
+    this.lastAmbientAt = Math.max(this.lastAmbientAt, now);
+    // Interrupt slower ambient/idle/sleep timers immediately on real action,
+    // without defeating active 60/30 FPS action pacing timers.
+    if (this.idleFrameTimer === null || this.pacingTier === 'action') return;
     window.clearTimeout(this.idleFrameTimer);
     this.idleFrameTimer = null;
-    this.isIdlePacing = false;
+    this.pacingTier = 'action';
+    this.rafId = requestAnimationFrame(this.renderFrame);
+  }
+
+  private wakeAmbient(now = performance.now()): void {
+    this.lastAmbientAt = Math.max(this.lastAmbientAt, now);
+    // Never defeat active action or ambient pacing timers on high-Hz cursor storms;
+    // only promote out of slow idle/sleep timers once an ambient frame interval has elapsed.
+    if (
+      this.idleFrameTimer === null ||
+      this.pacingTier === 'action' ||
+      this.pacingTier === 'ambient'
+    ) {
+      return;
+    }
+    if (now - this.lastRenderPerfMs < AMBIENT_FRAME_MS - 6) return;
+    window.clearTimeout(this.idleFrameTimer);
+    this.idleFrameTimer = null;
+    this.pacingTier = 'ambient';
     this.rafId = requestAnimationFrame(this.renderFrame);
   }
 
@@ -1071,10 +1219,18 @@ export class KuroCatEngine {
     this.lastPokeAt = now;
   }
 
-  private wakeCat(now = performance.now(), mode: 'gentle' | 'abrupt' = 'gentle'): void {
-    this.wakeRendering(now);
+  private wakeCat(
+    now = performance.now(),
+    mode: 'gentle' | 'abrupt' = 'gentle',
+    highActivity = true,
+  ): void {
     const wasAsleep = this.asleep;
     const recentlyWoken = wasAsleep || this.sleepAmount >= 0.45 || now - this.wakeAt < 1200;
+    if (highActivity || recentlyWoken) {
+      this.wakeAction(now);
+    } else {
+      this.wakeAmbient(now);
+    }
     if (wasAsleep) {
       this.wakeAt = now;
     }
@@ -1157,7 +1313,7 @@ export class KuroCatEngine {
   /** Interactive demo trigger: immediately curls into sleepy loaf with floating Zzz! */
   public triggerSleepDemo(): void {
     const now = performance.now();
-    this.wakeRendering(now);
+    this.wakeAction(now);
     this.isCross = false;
     this.annoy = 0;
     this.curiousUntil = -10000;
@@ -1460,7 +1616,7 @@ export class KuroCatEngine {
     if (this.privacyMode) return;
     const spec = resolveKeyByVk(vk, this.keyboardLayout);
     if (!spec) return;
-    this.wakeRendering();
+    this.wakeAction();
     let stillHeldSameSpec = false;
     for (const h of this.heldKeys.values()) {
       if (h.specId === spec.id) {
@@ -1494,7 +1650,9 @@ export class KuroCatEngine {
       return;
     }
 
-    this.wakeCat(now, 'abrupt');
+    // Casual mouse travel uses ambient (~23 FPS) pacing unless it wakes a sleeping cat
+    // or triggers laser-pointer Curious mode in update().
+    this.wakeCat(now, 'abrupt', false);
     // On desktop, onGlobalMouseMove carries true full-screen 0..1 coords; on embedded web, window pointermove feeds onPointerSpeedSample directly
     if (!this.embedded) {
       this.recordPointerSpeed(nx, ny, now);
@@ -1595,7 +1753,7 @@ export class KuroCatEngine {
   }
 
   public onMouseUp(button: string): void {
-    this.wakeRendering();
+    this.wakeAction();
     if (button === 'left') {
       this.mouseLeftDown = false;
       this.mouseDownAt.left = 0;
@@ -1642,7 +1800,11 @@ export class KuroCatEngine {
       overCat !== this.cursorOverCat ||
       hasPointerPosition !== this.hasPointerPosition
     ) {
-      this.wakeRendering(now);
+      // Ambient cursor gaze runs at ~23 FPS instead of forcing 60-120 FPS redraws;
+      // while deeply asleep with eyes closed and cursor outside the cat, skip waking entirely.
+      if (!(this.asleep && this.sleepAmount > 0.92 && !overCat)) {
+        this.wakeAmbient(now);
+      }
       if (cursorDelta > 0.0015) {
         this.lastCursorEyeAt = now;
       }
@@ -2004,7 +2166,7 @@ export class KuroCatEngine {
         side: Math.random() < 0.5 ? -1 : 1,
       };
       this.nextIdleActAt = now + 3800 + Math.random() * 4800;
-      this.wakeRendering(now);
+      this.wakeAmbient(now);
     }
     const act = this.idleAct;
     const actU = act ? Math.max(0, Math.min(1, (now - act.t0) / act.dur)) : 0;
@@ -2215,22 +2377,9 @@ export class KuroCatEngine {
       }
     }
 
-    // Keep active animations smooth. Sleep particles continue drawing at the idle rate.
-    if (
-      isCatMode &&
-      (curiousNow ||
-        this.crossAmount > 0.03 ||
-        this.idleAct !== null ||
-        this.fxParticles.some((fx) => fx.kind !== 'z') ||
-        (this.sleepAmount > 0.02 && this.sleepAmount < 0.98) ||
-        (wakeElapsed >= 0 && wakeElapsed < 0.65) ||
-        Math.abs(this.deskHopY) > 0.15 ||
-        Math.abs(this.eyeXSpring.v) > 0.02 ||
-        Math.abs(this.eyeYSpring.v) > 0.02 ||
-        Math.abs(this.faceTurnSpring.v) > 0.05)
-    ) {
-      this.lastActivityAt = Math.max(this.lastActivityAt, now);
-    }
+    // Note: active emotional/physics transitions (curious, cross, sleep transition, wake shake,
+    // desk hop, non-Z FX) and ambient gaze/fidgets are evaluated directly by computePacingTier()
+    // so they never tack an extra 2.2s of 60 FPS tail-off onto finished transitions or sleep entry.
 
     this.earTwitchLeft = Math.max(0, this.earTwitchLeft - dt * 8);
     this.earTwitchRight = Math.max(0, this.earTwitchRight - dt * 8);
@@ -2860,8 +3009,6 @@ export class KuroCatEngine {
       ctx.bezierCurveTo(cp1X - 2, cp1Y - 4, cp2X - 3, cp2Y - 4, endX - 3, endY - 4);
       ctx.stroke();
     } else {
-      ctx.shadowColor = 'rgba(18, 17, 18, 0.45)';
-      ctx.shadowBlur = 0; /* perf: no per-frame blur */
       ctx.strokeStyle = '#141314';
       ctx.lineWidth = 16.0;
       ctx.beginPath();
@@ -2944,9 +3091,6 @@ export class KuroCatEngine {
       ctx.shadowColor = 'rgba(26, 30, 40, 0.24)';
       ctx.shadowBlur = 0; /* perf: no per-frame blur */
       ctx.shadowOffsetY = 2;
-    } else {
-      ctx.shadowColor = 'rgba(18, 17, 18, 0.42)';
-      ctx.shadowBlur = 0; /* perf: no per-frame blur */
     }
 
     // 1) Cute rounded grounded hind paws always rendered in seated posture (no idle disappear/blink; Fixes #1)
@@ -4245,8 +4389,6 @@ export class KuroCatEngine {
       return;
     }
 
-    ctx.shadowColor = 'rgba(18, 17, 18, 0.42)';
-    ctx.shadowBlur = 0; /* perf: no per-frame blur */
     if (isSmear) {
       const smearGrad = ctx.createLinearGradient(sx, sy, px, py);
       smearGrad.addColorStop(0.0, 'rgba(20, 19, 20, 0.0)');
