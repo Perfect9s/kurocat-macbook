@@ -23,6 +23,12 @@ struct TrayCheckHandles {
     obs_toggle: CheckMenuItem<Wry>,
     obs_hide_pet: CheckMenuItem<Wry>,
     mcp_toggle: CheckMenuItem<Wry>,
+    scale_25: CheckMenuItem<Wry>,
+    scale_50: CheckMenuItem<Wry>,
+    scale_75: CheckMenuItem<Wry>,
+    scale_100: CheckMenuItem<Wry>,
+    scale_125: CheckMenuItem<Wry>,
+    scale_150: CheckMenuItem<Wry>,
     fps_60: CheckMenuItem<Wry>,
     fps_30: CheckMenuItem<Wry>,
     lang_auto: CheckMenuItem<Wry>,
@@ -60,6 +66,12 @@ pub fn sync_checkmarks(s: &AppSettings) {
             let _ = h.obs_toggle.set_checked(s.obs_enabled);
             let _ = h.obs_hide_pet.set_checked(s.obs_enabled && s.obs_hide_pet);
             let _ = h.mcp_toggle.set_checked(s.mcp_enabled);
+            let _ = h.scale_25.set_checked((s.scale - 0.25).abs() < 0.015);
+            let _ = h.scale_50.set_checked((s.scale - 0.50).abs() < 0.015);
+            let _ = h.scale_75.set_checked((s.scale - 0.75).abs() < 0.015);
+            let _ = h.scale_100.set_checked((s.scale - 1.00).abs() < 0.015);
+            let _ = h.scale_125.set_checked((s.scale - 1.25).abs() < 0.015);
+            let _ = h.scale_150.set_checked((s.scale - 1.50).abs() < 0.015);
             let _ = h.fps_30.set_checked(s.fps_cap == 30);
             let _ = h.fps_60.set_checked(s.fps_cap != 30);
             let _ = h.lang_auto.set_checked(s.language == "auto");
@@ -214,12 +226,12 @@ fn build_tray_menu(
         ],
     )?;
 
-    let scale_25 = MenuItem::with_id(app, "scale_25", t(lang, "tray.scale_25"), true, None::<&str>)?;
-    let scale_50 = MenuItem::with_id(app, "scale_50", t(lang, "tray.scale_50"), true, None::<&str>)?;
-    let scale_75 = MenuItem::with_id(app, "scale_75", t(lang, "tray.scale_75"), true, None::<&str>)?;
-    let scale_100 = MenuItem::with_id(app, "scale_100", t(lang, "tray.scale_100"), true, None::<&str>)?;
-    let scale_125 = MenuItem::with_id(app, "scale_125", t(lang, "tray.scale_125"), true, None::<&str>)?;
-    let scale_150 = MenuItem::with_id(app, "scale_150", t(lang, "tray.scale_150"), true, None::<&str>)?;
+    let scale_25 = CheckMenuItem::with_id(app, "scale_25", t(lang, "tray.scale_25"), true, (initial.scale - 0.25).abs() < 0.015, None::<&str>)?;
+    let scale_50 = CheckMenuItem::with_id(app, "scale_50", t(lang, "tray.scale_50"), true, (initial.scale - 0.50).abs() < 0.015, None::<&str>)?;
+    let scale_75 = CheckMenuItem::with_id(app, "scale_75", t(lang, "tray.scale_75"), true, (initial.scale - 0.75).abs() < 0.015, None::<&str>)?;
+    let scale_100 = CheckMenuItem::with_id(app, "scale_100", t(lang, "tray.scale_100"), true, (initial.scale - 1.00).abs() < 0.015, None::<&str>)?;
+    let scale_125 = CheckMenuItem::with_id(app, "scale_125", t(lang, "tray.scale_125"), true, (initial.scale - 1.25).abs() < 0.015, None::<&str>)?;
+    let scale_150 = CheckMenuItem::with_id(app, "scale_150", t(lang, "tray.scale_150"), true, (initial.scale - 1.50).abs() < 0.015, None::<&str>)?;
     let scale_menu = Submenu::with_items(
         app,
         t(lang, "tray.scale_menu"),
@@ -468,6 +480,12 @@ fn build_tray_menu(
         obs_toggle,
         obs_hide_pet,
         mcp_toggle,
+        scale_25,
+        scale_50,
+        scale_75,
+        scale_100,
+        scale_125,
+        scale_150,
         fps_60,
         fps_30,
         lang_auto,
