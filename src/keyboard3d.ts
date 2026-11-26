@@ -859,14 +859,14 @@ export class KeyboardAndMouse3D {
     }
     const glass = makeRoundedSlabGeo(width - .012, depth - .012, .006, .051, .036);
     const position = glass.getAttribute('position');
-    const colors = new Float32Array(position.count * 3);
+    const glassColors = new Float32Array(position.count * 3);
     const pale = new THREE.Color('#fdfdfb'), cool = new THREE.Color('#e5e9ec');
     const shade = new THREE.Color();
     for (let i = 0; i < position.count; i++) {
       const t = .5 + .28 * position.getZ(i) / depth + .55 * position.getX(i) / width;
-      shade.copy(pale).lerp(cool, t).toArray(colors, i * 3);
+      shade.copy(pale).lerp(cool, t).toArray(glassColors, i * 3);
     }
-    glass.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    glass.setAttribute('color', new THREE.BufferAttribute(glassColors, 3));
     const marker = document.createElement('canvas');
     marker.width = marker.height = 96;
     const pen = marker.getContext('2d')!;
