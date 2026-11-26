@@ -1,4 +1,14 @@
-export type KeyboardLayoutId = '65' | '108';
+import { MACBOOK_LAYOUT } from './macbookLayout.ts';
+
+export type KeyboardLayoutId = '65' | '108' | 'macbook';
+
+export function isKeyboardLayoutId(value: unknown): value is KeyboardLayoutId {
+  return value === '65' || value === '108' || value === 'macbook';
+}
+
+export function normalizeKeyboardLayout(value: unknown): KeyboardLayoutId {
+  return isKeyboardLayoutId(value) ? value : '65';
+}
 
 export interface KeySpec {
   id: string;
@@ -228,6 +238,7 @@ export const KEYBOARD_KEYS_108: KeySpec[] = [
 export const KEYBOARD_KEYS = KEYBOARD_KEYS_65;
 
 export const KEYBOARD_LAYOUTS: Record<KeyboardLayoutId, KeyboardLayoutDef> = {
+  macbook: MACBOOK_LAYOUT,
   '65': {
     id: '65',
     totalUnits: 15,
@@ -243,11 +254,12 @@ export const KEYBOARD_LAYOUTS: Record<KeyboardLayoutId, KeyboardLayoutDef> = {
 };
 
 const vkLookups: Record<KeyboardLayoutId, Map<number, KeySpec>> = {
+  macbook: new Map(),
   '65': new Map<number, KeySpec>(),
   '108': new Map<number, KeySpec>(),
 };
 
-for (const layoutId of ['65', '108'] as const) {
+for (const layoutId of ['65', '108', 'macbook'] as const) {
   for (const key of KEYBOARD_LAYOUTS[layoutId].keys) {
     for (const vk of key.vkCodes) {
       vkLookups[layoutId].set(vk, key);

@@ -5,6 +5,7 @@ import {
   type CatEarShape,
   type CatSkinConfig,
 } from './catSkins';
+import type { PadPoint } from './trackpad';
 import type { KeyboardLayoutId } from './keyboardLayout';
 import type { KeyboardOrientation, TailKeyMode } from './catEngine';
 import { DEFAULT_TAIL_KEY_IDS } from './catEngine';
@@ -1965,8 +1966,8 @@ export class KuroCatEngine3D {
     }
   }
 
-  public setKeyboardConfig(layout: KeyboardLayoutId, orient: KeyboardOrientation): void {
-    this.desk.rebuildBoard(layout, orient);
+  public setKeyboardConfig(layout: KeyboardLayoutId, orient: KeyboardOrientation, white = false): void {
+    this.desk.rebuildBoard(layout, orient, white);
     this.paws.L.keyId = null;
     this.paws.R.keyId = null;
     this.tailTap.keyId = null;
@@ -2210,7 +2211,20 @@ export class KuroCatEngine3D {
     }
   }
 
-  public onMouseDown(btn: string): void {
+  public setTrackpad(enabled: boolean): void {
+    this.desk.setTrackpad(enabled);
+    this.wakeRendering();
+  }
+
+  public onTrackpad(points: readonly PadPoint[]): void {
+    if (!this.desk.pad.enabled) return;
+    this.desk.setContacts(points);
+    if (points.length) this.lastMouse = this.elapsed;
+    this.wakeRendering();
+  }
+
+  public onMouseDown(btn: string, point?: PadPoint): void {
+    if (this.desk.pad.enabled) this.desk.pad.press(point);
     this.wake('abrupt');
     this.lastMouse = this.elapsed;
     this.paws.L.lastActive = this.elapsed;
@@ -2446,7 +2460,8 @@ export class KuroCatEngine3D {
     const az = (this.sOrbitAz.step(this.orbitAzimuthTarget, dt) * Math.PI) / 180;
     const el = (this.sOrbitEl.step(this.orbitElevTarget, dt) * Math.PI) / 180;
     const is108 = this.desk.getLayoutId() === '108';
-    const camKey = `${az.toFixed(4)}|${el.toFixed(4)}|${is108 ? 1 : 0}|${this.camera.aspect.toFixed(4)}|${this.renderScale.toFixed(3)}`;
+    const padVisible = this.desk.pad.enabled;
+    const camKey = `${padVisible}|${az.toFixed(4)}|${el.toFixed(4)}|${is108 ? 1 : 0}|${this.camera.aspect.toFixed(4)}|${this.renderScale.toFixed(3)}`;
     if (camKey !== this.lastCamKey) {
       this.lastCamKey = camKey;
       const baseDist = is108 ? 9.7 : 8.1;
@@ -2460,6 +2475,15 @@ export class KuroCatEngine3D {
         this.camAnchor.z + Math.cos(az) * Math.cos(el) * dist,
       );
       this.camera.lookAt(this.camAnchor);
+      // Extend the image on the left for the pad without moving the viewpoint.
+      if (padVisible) {
+        const aspect = this.camera.aspect;
+        const margin = 0.20 / reqHalfW;
+        this.camera.setViewOffset(aspect, 1, -aspect * margin, -margin / 2,
+          aspect * (1 + margin), 1 + margin);
+      } else if (this.camera.view?.enabled) {
+        this.camera.clearViewOffset();
+      }
     }
 
     // 2) Emotional state machine

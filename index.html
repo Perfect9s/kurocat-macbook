@@ -117,14 +117,30 @@
       <div class="menu-sep"></div>
       <div class="menu-scale-row">
         <span class="menu-scale-label" data-i18n="menu.kb_label">键盘配列与方向</span>
-        <div class="kb-pills">
+        <div class="kb-pills kb-layout-options">
           <button class="kb-pill active" data-kblayout="65" data-i18n="menu.kb_65">65% 紧凑</button>
           <button class="kb-pill" data-kblayout="108" data-i18n="menu.kb_108">108 全尺寸</button>
+          <button class="kb-pill" data-kblayout="macbook" data-i18n="menu.kb_macbook" type="button">MacBook</button>
         </div>
         <div class="kb-pills">
           <button class="kb-pill active" data-kborient="cat" data-i18n="menu.kb_cat">面向猫咪</button>
           <button class="kb-pill" data-kborient="viewer" data-i18n="menu.kb_viewer">面向观众</button>
         </div>
+      </div>
+      <div class="menu-scale-row hidden" data-mac-finish>
+        <span class="menu-scale-label" data-i18n="menu.kb_finish">MacBook 配色</span>
+        <div class="kb-pills">
+          <button class="kb-pill" data-finish="black" type="button" data-i18n="menu.kb_black">黑色</button>
+          <button class="kb-pill" data-finish="white" type="button" data-i18n="menu.kb_white">白色</button>
+        </div>
+      </div>
+      <div class="menu-scale-row hidden" data-pad-options>
+        <span class="menu-scale-label" data-i18n="menu.pointer">指点设备</span>
+        <div class="kb-pills">
+          <button class="kb-pill" data-pointer="mouse" type="button" data-i18n="menu.mouse">鼠标</button>
+          <button class="kb-pill" data-pointer="trackpad" type="button" data-i18n="menu.trackpad">触控板</button>
+        </div>
+        <span class="menu-hint hidden" data-pad-error data-i18n="menu.pad_unavailable">触点暂不可用，仍可显示点击反馈。</span>
       </div>
       <div class="menu-scale-row">
         <div class="scale-header">

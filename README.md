@@ -164,6 +164,14 @@ brew install --cask qianyiai/tap/kurocat
 
 <a id="mcp"></a>
 
+### MacBook 键盘和触控板
+
+在设置的「系统」页选择 **MacBook** 配列，可切换黑色或白色键帽，2D 和 3D 均支持面向观众或猫咪。在 macOS 上选择「指点设备 → 触控板」可显示内置触控板的触点和点击位置；单指点击时猫爪会跟随落点。切换设备时会保留当前 3D 视角。
+
+![白色 MacBook 键盘和触控板](docs/macbook/macbook-3d-white-trackpad-viewer.png)
+
+[配列和输入说明](docs/MACBOOK-RELEASE.md)
+
 ## 🤖 AI 伴侣与 MCP 捏猫
 
 KuroCat 单文件原生内置 **Stdio** 与 **本机 Streamable HTTP（`127.0.0.1:27420`）** 双模式 MCP Server，无需安装 Node.js 或 Python：

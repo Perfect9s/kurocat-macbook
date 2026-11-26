@@ -1,3 +1,4 @@
+import type { PadPoint } from './trackpad';
 import {
   DEFAULT_TAIL_KEY_IDS,
   KuroCatEngine,
@@ -7,7 +8,7 @@ import {
 import { catAudio } from './audio';
 import { AgentCompanionController, type AgentCompanionEvent } from './agentCompanion';
 import { DEFAULT_BUILTIN_CATS, type CatSkinConfig } from './catSkins';
-import type { KeyboardLayoutId } from './keyboardLayout';
+import { isKeyboardLayoutId, normalizeKeyboardLayout, type KeyboardLayoutId } from './keyboardLayout';
 import type { CollarColorId, KuroCatEngine3D } from './catEngine3d';
 
 type ObsRenderMode = '2d' | '3d';
@@ -18,6 +19,8 @@ interface ObsAppSettings {
   showKeyBubbles?: boolean;
   catBreed?: string;
   keyboardLayout?: KeyboardLayoutId;
+  trackpadEnabled?: boolean;
+  whiteKeyboard?: boolean;
   keyboardOrientation?: KeyboardOrientation;
   tailKeyMode?: TailKeyMode;
   tailKeyIds?: string[];
@@ -29,7 +32,8 @@ interface ObsAppSettings {
 type InputEvent =
   | { kind: 'keyDown'; vk: number; scan: number; repeat: boolean }
   | { kind: 'keyUp'; vk: number; scan: number }
-  | { kind: 'mouseDown'; button: string }
+  | { kind: 'trackpad'; points: PadPoint[] }
+  | { kind: 'mouseDown'; button: string; point?: PadPoint }
   | { kind: 'mouseUp'; button: string }
   | { kind: 'mouseWheel'; delta: number }
   | { kind: 'mouseMove'; x: number; y: number; nx: number; ny: number }
@@ -49,6 +53,7 @@ const engine = new KuroCatEngine(canvas);
 
 let engine3d: KuroCatEngine3D | null = null;
 let loading3d: Promise<void> | null = null;
+let lastPadPoints: readonly PadPoint[] = [];
 let active3d = false;
 let webglBlocked = false;
 let privacyActive = false;
@@ -88,7 +93,8 @@ const overrideHeadphones: ObsHeadphoneMode | null =
   overrideHeadphoneRaw === 'auto' || overrideHeadphoneRaw === 'on' || overrideHeadphoneRaw === 'off'
     ? overrideHeadphoneRaw
     : null;
-const overrideLayout = params.get('layout') === '108' ? '108' : params.get('layout') === '65' ? '65' : null;
+const requestedLayout = params.get('layout');
+const overrideLayout = isKeyboardLayoutId(requestedLayout) ? requestedLayout : null;
 const overrideOrient = params.get('orient') === 'viewer' ? 'viewer' : params.get('orient') === 'cat' ? 'cat' : null;
 const overrideBubbles = params.has('bubbles') ? params.get('bubbles') !== '0' && params.get('bubbles') !== 'false' : null;
 const rawScaleParam = params.get('scale');
@@ -152,7 +158,10 @@ function syncObs3D(
     if (activeCat) engine3d.setCatSkin(activeCat);
     engine3d.setCollar(collar);
     engine3d.setHeadphones(computeObsHeadphonesOn(activeCat));
-    engine3d.setKeyboardConfig(layout, orient);
+    if (!currentSettings.trackpadEnabled) lastPadPoints = [];
+    engine3d.setTrackpad(currentSettings.trackpadEnabled === true);
+    engine3d.onTrackpad(lastPadPoints);
+    engine3d.setKeyboardConfig(layout, orient, currentSettings.whiteKeyboard === true);
     engine3d.setTailKeyConfig(tailMode, tailIds);
     engine3d.setRenderScale(overrideScale ?? 1.0);
     engine3d.setPrivacyMode(privacyActive);
@@ -187,7 +196,7 @@ function applyState(): void {
   const breedId = overrideBreed || currentSettings.catBreed || 'black';
   const activeCat = catList.find((c) => c.id === breedId) ?? catList[0];
   const layout: KeyboardLayoutId =
-    overrideLayout || (currentSettings.keyboardLayout === '108' ? '108' : '65');
+    overrideLayout || (normalizeKeyboardLayout(currentSettings.keyboardLayout));
   const orient: KeyboardOrientation =
     overrideOrient || (currentSettings.keyboardOrientation === 'viewer' ? 'viewer' : 'cat');
   const tailMode: TailKeyMode =
@@ -215,7 +224,10 @@ function applyState(): void {
   engine.showKeyBubbles = showBubbles;
   engine.setCatAppearance(activeCat?.id || 'black', activeCat);
   engine.setHeadphones(computeObsHeadphonesOn(activeCat));
-  engine.setKeyboardConfig(layout, orient);
+  if (!currentSettings.trackpadEnabled) lastPadPoints = [];
+  engine.setTrackpad(currentSettings.trackpadEnabled === true);
+  engine.onTrackpad(lastPadPoints);
+  engine.setKeyboardConfig(layout, orient, currentSettings.whiteKeyboard === true);
   engine.setTailKeyConfig(tailMode, tailIds);
   engine.setRenderScale(overrideScale ?? 1.0);
   syncObs3D(activeCat, mode, collar, layout, orient, tailMode, tailIds, showBubbles);
@@ -232,7 +244,12 @@ function handleInput(p: InputEvent): void {
       if (active3d && engine3d) engine3d.onKeyUp(p.vk);
       else engine.onKeyUp(p.vk);
       break;
-    case 'mouseMove':
+    case 'trackpad':
+        lastPadPoints = p.points;
+        if (active3d && engine3d) engine3d.onTrackpad(p.points);
+        else engine.onTrackpad(p.points);
+        break;
+      case 'mouseMove':
       if (active3d && engine3d) {
         engine3d.onGlobalMouseMove(p.nx, p.ny);
         engine3d.onWindowCursor(p.nx, p.ny, false);
@@ -242,8 +259,8 @@ function handleInput(p: InputEvent): void {
       }
       break;
     case 'mouseDown':
-      if (active3d && engine3d) engine3d.onMouseDown(p.button);
-      else engine.onMouseDown(p.button);
+      if (active3d && engine3d) engine3d.onMouseDown(p.button, p.point);
+      else engine.onMouseDown(p.button, p.point);
       break;
     case 'mouseUp':
       if (active3d && engine3d) engine3d.onMouseUp(p.button);

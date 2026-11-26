@@ -1,4 +1,6 @@
 import './style.css';
+import type { PadPoint } from './trackpad';
+import { syncDeskOptions } from './deskOptions';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -13,6 +15,8 @@ import { AgentCompanionController, type AgentCompanionEvent } from './agentCompa
 import { DEFAULT_BUILTIN_CATS, type CatSkinConfig } from './catSkins';
 import {
   getKeyboardLayout,
+  isKeyboardLayoutId,
+  normalizeKeyboardLayout,
   resolveKeyByVk,
   type KeyboardLayoutDef,
   type KeyboardLayoutId,
@@ -45,6 +49,8 @@ interface AppSettings {
   mcpEnabled: boolean;
   mcpPort: number;
   keyboardLayout: KeyboardLayoutId;
+  trackpadEnabled: boolean;
+  whiteKeyboard: boolean;
   keyboardOrientation: KeyboardOrientation;
   privacyPasswordGuard: boolean;
   tailKeyMode: TailKeyMode;
@@ -62,7 +68,8 @@ interface AppSettings {
 type InputEvent =
   | { kind: 'keyDown'; vk: number; scan: number; repeat: boolean }
   | { kind: 'keyUp'; vk: number; scan: number }
-  | { kind: 'mouseDown'; button: string }
+  | { kind: 'trackpad'; points: PadPoint[] }
+  | { kind: 'mouseDown'; button: string; point?: PadPoint }
   | { kind: 'mouseUp'; button: string }
   | { kind: 'mouseWheel'; delta: number }
   | { kind: 'mouseMove'; x: number; y: number; nx: number; ny: number }
@@ -145,6 +152,8 @@ let settings: AppSettings = {
   mcpEnabled: true,
   mcpPort: 27420,
   keyboardLayout: '65',
+  trackpadEnabled: false,
+  whiteKeyboard: false,
   keyboardOrientation: 'cat',
   privacyPasswordGuard: true,
   tailKeyMode: 'smart',
@@ -194,6 +203,7 @@ let dispose3dTimer: number | null = null;
 const IDLE_3D_DISPOSE_MS = 8000;
 let webgl3dUnavailable = false;
 let isWin7Ulw = false;
+let lastPadPoints: readonly PadPoint[] = [];
 let active3d = false;
 let privacyActive = false;
 let gameActive = false;
@@ -313,7 +323,7 @@ function wants3DNow(): boolean {
 function syncEngine3DState(): void {
   if (!engine3d) return;
   const activeCat = catList.find((c) => c.id === settings.catBreed) ?? catList[0];
-  const kbLayout: KeyboardLayoutId = settings.keyboardLayout === '108' ? '108' : '65';
+  const kbLayout: KeyboardLayoutId = normalizeKeyboardLayout(settings.keyboardLayout);
   const kbOrient: KeyboardOrientation = settings.keyboardOrientation === 'viewer' ? 'viewer' : 'cat';
   const tailMode: TailKeyMode =
     settings.tailKeyMode === 'custom' ||
@@ -338,7 +348,10 @@ function syncEngine3DState(): void {
   engine3d.setCollar(collar);
   engine3d.setHeadphones(shouldWearHeadphonesNow());
   engine3d.setGameActive(gameActive);
-  engine3d.setKeyboardConfig(kbLayout, kbOrient);
+  if (!settings.trackpadEnabled) lastPadPoints = [];
+  engine3d.setTrackpad(settings.trackpadEnabled === true);
+  engine3d.onTrackpad(lastPadPoints);
+  engine3d.setKeyboardConfig(kbLayout, kbOrient, settings.whiteKeyboard === true);
   engine3d.setTailKeyConfig(tailMode, tailIds);
   engine3d.setPrivacyMode(privacyActive);
   engine3d.setFpsCap(settings.fpsCap === 30 ? 30 : 0);
@@ -484,7 +497,7 @@ function syncMenuUI(): void {
     updateScaleSliderVisual(settings.scale);
   }
 
-  const kbLayout: KeyboardLayoutId = settings.keyboardLayout === '108' ? '108' : '65';
+  const kbLayout: KeyboardLayoutId = normalizeKeyboardLayout(settings.keyboardLayout);
   const kbOrient: KeyboardOrientation = settings.keyboardOrientation === 'viewer' ? 'viewer' : 'cat';
   const tailMode: TailKeyMode =
     settings.tailKeyMode === 'custom' ||
@@ -494,6 +507,7 @@ function syncMenuUI(): void {
       : 'smart';
   const tailIds = Array.isArray(settings.tailKeyIds) ? settings.tailKeyIds : [...DEFAULT_TAIL_KEY_IDS];
 
+  syncDeskOptions(settings, isMacPlatform(), padUnavailable);
   document.querySelectorAll<HTMLButtonElement>('[data-kblayout]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.kblayout === kbLayout);
   });
@@ -570,7 +584,10 @@ function syncMenuUI(): void {
   engine.showKeyBubbles = settings.showKeyBubbles;
   engine.setCatAppearance(activeCat?.id || 'black', activeCat);
   engine.setHeadphones(shouldWearHeadphonesNow());
-  engine.setKeyboardConfig(kbLayout, kbOrient);
+  if (!settings.trackpadEnabled) lastPadPoints = [];
+  engine.setTrackpad(settings.trackpadEnabled === true);
+  engine.onTrackpad(lastPadPoints);
+  engine.setKeyboardConfig(kbLayout, kbOrient, settings.whiteKeyboard === true);
   engine.setTailKeyConfig(tailMode, tailIds);
   engine.setFpsCap(fpsCapNum);
   engine3d?.setFpsCap(fpsCapNum);
@@ -1020,6 +1037,8 @@ async function triggerManualUpdateCheck(): Promise<void> {
   }
 }
 
+let padUnavailable = false;
+
 async function bootstrap(): Promise<void> {
   engine.start();
 
@@ -1126,6 +1145,14 @@ async function bootstrap(): Promise<void> {
     });
   }
 
+  if (isMacPlatform()) {
+    await listen<boolean>('kuro-trackpad-unavailable', (ev) => {
+      padUnavailable = ev.payload;
+      syncMenuUI();
+    });
+    padUnavailable = await invoke<boolean>('trackpad_unavailable').catch(() => false);
+    syncMenuUI();
+  }
   await listen<AppSettings>('kuro-settings', (ev) => {
     const prevLock = lastKnownLockState;
     const prevRenderMode = settings.renderMode;
@@ -1218,14 +1245,19 @@ async function bootstrap(): Promise<void> {
           engine.onKeyUp(p.vk);
         }
         break;
+      case 'trackpad':
+        lastPadPoints = p.points;
+        if (active3d && engine3d) engine3d.onTrackpad(p.points);
+        else engine.onTrackpad(p.points);
+        break;
       case 'mouseMove':
         if (active3d && engine3d) engine3d.onGlobalMouseMove(p.nx, p.ny);
         else engine.onGlobalMouseMove(p.nx, p.ny);
         break;
       case 'mouseDown':
         agentCompanion.notifyRealUserInput();
-        if (active3d && engine3d) engine3d.onMouseDown(p.button);
-        else engine.onMouseDown(p.button);
+        if (active3d && engine3d) engine3d.onMouseDown(p.button, p.point);
+        else engine.onMouseDown(p.button, p.point);
         break;
       case 'mouseUp':
         if (active3d && engine3d) engine3d.onMouseUp(p.button);
@@ -1369,7 +1401,7 @@ async function bootstrap(): Promise<void> {
 
   menuEl.addEventListener('click', (e) => {
     const target = (e.target as HTMLElement).closest<HTMLElement>(
-      '[data-action], [data-scale], [data-breed], [data-rendermode], [data-collar], [data-headphonemode], [data-kblayout], [data-kborient], [data-tailmode], [data-fpscap], [data-lang]',
+      '[data-action], [data-scale], [data-breed], [data-rendermode], [data-collar], [data-headphonemode], [data-kblayout], [data-kborient], [data-pointer], [data-finish], [data-tailmode], [data-fpscap], [data-lang]',
     );
     if (!target) return;
 
@@ -1409,8 +1441,18 @@ async function bootstrap(): Promise<void> {
       return;
     }
 
+    const pointer = target.dataset.pointer;
+    if (pointer === 'mouse' || pointer === 'trackpad') {
+      void applySettingsPatch({ trackpadEnabled: pointer === 'trackpad' });
+      return;
+    }
+    const finish = target.dataset.finish;
+    if (finish === 'black' || finish === 'white') {
+      void applySettingsPatch({ whiteKeyboard: finish === 'white' });
+      return;
+    }
     const kbLayoutAttr = target.dataset.kblayout;
-    if (kbLayoutAttr === '65' || kbLayoutAttr === '108') {
+    if (isKeyboardLayoutId(kbLayoutAttr)) {
       void applySettingsPatch({ keyboardLayout: kbLayoutAttr });
       closeContextMenu();
       return;

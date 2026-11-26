@@ -1,6 +1,9 @@
+import { macbookFinishes } from './macbookFinish';
+import { Trackpad, padPosition, PAD_DEPTH_RATIO, padCenterDepth, PAD_USABLE, drawClickMark, type PadPoint } from './trackpad';
+import { paintMacBookLegend } from './macbookLegend';
 import {
-  KEYBOARD_KEYS_65,
-  KEYBOARD_KEYS_108,
+  KEYBOARD_LAYOUTS,
+  normalizeKeyboardLayout,
   getKeyboardLayout,
   type KeySpec,
   type KeyboardLayoutId,
@@ -244,6 +247,60 @@ export class KuroCatEngine {
   public onAfterRender: (() => void) | null = null;
   public catBreed: CatBreed = 'black';
   public customSkin: ResolvedSkin | null = null;
+  private whiteKeyboard = false;
+  private readonly pad = new Trackpad();
+  private readonly padWidth = 80;
+  // The canvas keyboard uses a foreshortened top view.
+  private get padDepth(): number {
+    const layout = getKeyboardLayout(this.keyboardLayout);
+    const unitWidth = this.kbWidth / layout.totalUnits;
+    const unitDepth = this.kbHeight / layout.totalRows;
+    return this.padWidth * PAD_DEPTH_RATIO * unitDepth / unitWidth;
+  }
+
+  private deskWidthScale(y: number): number {
+    // Shared with the keyboard chassis: 95.5% at the far edge, 103.5% at the near edge.
+    return 0.995 + 0.08 * y / this.kbHeight;
+  }
+
+  private get padCenterX(): number { return -(this.kbWidth + this.padWidth) / 2 - 7; }
+  private get padCenterY(): number {
+    return padCenterDepth(this.kbHeight, this.padDepth);
+  }
+  private get padShear(): number { return this.padCenterX * 0.08 / this.kbHeight; }
+  private get padTravel(): number {
+    return this.pad.pressed || this.mouseLeftDown || this.mouseRightDown ? 0.8 : 0;
+  }
+
+  public setTrackpad(enabled: boolean): void {
+    if (this.pad.enabled === enabled) return;
+    this.pad.setEnabled(enabled);
+    this.syncLayoutPositions();
+    this.wakeRendering();
+  }
+
+  public onTrackpad(points: readonly PadPoint[]): void {
+    if (!this.pad.enabled) return;
+    this.pad.points = points;
+    if (points.length) {
+      this.lastMouseMoveAt = performance.now();
+      this.leftPaw.mode = 'mouse';
+    }
+    this.wakeRendering();
+  }
+
+  private padOffset(point = this.pad.target) {
+    const p = padPosition(point, this.keyboardOrientation === 'cat', this.padWidth * PAD_USABLE, this.padDepth * PAD_USABLE);
+    return { x: p.x * this.deskWidthScale(this.padCenterY + p.y) + this.padShear * p.y, y: p.y + this.padTravel };
+  }
+
+  private padWorldPoint(point = this.pad.target) {
+    const p = this.padOffset(point);
+    const c = Math.cos(this.kbTiltRad), s = Math.sin(this.kbTiltRad);
+    return { x: this.mouseBaseX + p.x * c - p.y * s,
+      y: this.mouseBaseY + this.deskHopY + p.x * s + p.y * c };
+  }
+
   public keyboardLayout: KeyboardLayoutId = '65';
   public keyboardOrientation: KeyboardOrientation = 'cat';
   public tailKeyMode: TailKeyMode = 'smart';
@@ -580,10 +637,18 @@ export class KuroCatEngine {
       this.kbCenterX = isBigFish ? 234 : 214;
       this.kbCenterY = 353;
       this.kbWidth = 266;
-      this.kbHeight = 74;
+      this.kbHeight = this.keyboardLayout === 'macbook' ? 88 : 74;
       this.kbTiltRad = (3.4 * Math.PI) / 180;
       this.mouseBaseX = isBigFish ? 72 : 54;
       this.mouseBaseY = isBigFish ? 322 : 334;
+    }
+    if (this.pad.enabled) {
+      this.kbCenterX += 24;
+      const x = this.padCenterX * this.deskWidthScale(this.padCenterY);
+      const y = this.padCenterY;
+      const c = Math.cos(this.kbTiltRad), s = Math.sin(this.kbTiltRad);
+      this.mouseBaseX = this.kbCenterX + c * x - s * y;
+      this.mouseBaseY = this.kbCenterY + s * x + c * y;
     }
   }
 
@@ -620,8 +685,9 @@ export class KuroCatEngine {
     }
   }
 
-  public setKeyboardConfig(layout: KeyboardLayoutId, orientation: KeyboardOrientation): void {
-    const nextLayout: KeyboardLayoutId = layout === '108' ? '108' : '65';
+  public setKeyboardConfig(layout: KeyboardLayoutId, orientation: KeyboardOrientation, white = false): void {
+    this.whiteKeyboard = white && layout === 'macbook';
+    const nextLayout: KeyboardLayoutId = normalizeKeyboardLayout(layout);
     const nextOrientation: KeyboardOrientation = orientation === 'viewer' ? 'viewer' : 'cat';
     const layoutChanged = this.keyboardLayout !== nextLayout;
     this.keyboardLayout = nextLayout;
@@ -630,6 +696,10 @@ export class KuroCatEngine {
     this.syncLayoutPositions();
 
     if (layoutChanged) {
+      for (const anim of this.keyAnims.values()) {
+        anim.pressed = false;
+        anim.pressAmount = 0;
+      }
       this.heldKeys.clear();
       this.catTail.heldVks.clear();
       this.catTailHeldAt.clear();
@@ -650,6 +720,7 @@ export class KuroCatEngine {
     const ang = this.kbTiltRad + (isCatFacing ? Math.PI : 0);
     const c = Math.cos(ang);
     const s = Math.sin(ang);
+    const padPoint = this.padWorldPoint();
     return {
       logicalW: this.logicalW,
       kbCenterX: this.kbCenterX,
@@ -657,8 +728,8 @@ export class KuroCatEngine {
       kbWidth: this.kbWidth,
       kbHeight: this.kbHeight,
       kbTiltRad: this.kbTiltRad,
-      mouseBtnX: mx + localBtnX * c - localBtnY * s,
-      mouseBtnY: my + localBtnX * s + localBtnY * c,
+      mouseBtnX: this.pad.enabled ? padPoint.x : mx + localBtnX * c - localBtnY * s,
+      mouseBtnY: this.pad.enabled ? padPoint.y : my + localBtnX * s + localBtnY * c,
       cursor: this.hasPointerPosition
         ? { x: this.cursorRelX * this.logicalW, y: this.cursorRelY * this.logicalH }
         : null,
@@ -838,12 +909,9 @@ export class KuroCatEngine {
     if (!ctx) throw new Error('Could not initialize 2D canvas context');
     this.ctx = ctx;
 
-    for (const k of KEYBOARD_KEYS_65) {
-      this.keyAnims.set(k.id, { pressed: false, pressAmount: 0, lastHitAt: -10000 });
-    }
-    for (const k of KEYBOARD_KEYS_108) {
-      if (!this.keyAnims.has(k.id)) {
-        this.keyAnims.set(k.id, { pressed: false, pressAmount: 0, lastHitAt: -10000 });
+    for (const layout of Object.values(KEYBOARD_LAYOUTS)) {
+      for (const key of layout.keys) {
+        this.keyAnims.set(key.id, { pressed: false, pressAmount: 0, lastHitAt: -10000 });
       }
     }
 
@@ -1462,6 +1530,7 @@ export class KuroCatEngine {
   }
 
   private spawnMouseBadge(button: 'left' | 'right' | 'middle', now: number): void {
+    if (this.pad.enabled) return;
     if (!this.showKeyBubbles) return;
     const colors = this.getMouseButtonColors();
     const label = button === 'left' ? 'LMB' : button === 'right' ? 'RMB' : 'MMB';
@@ -1494,7 +1563,8 @@ export class KuroCatEngine {
     });
   }
 
-  public onMouseDown(button: string): void {
+  public onMouseDown(button: string, point?: PadPoint): void {
+    if (this.pad.enabled) this.pad.press(point);
     const now = performance.now();
     this.wakeCat(now, 'abrupt');
     this.squashSpring.kick(1.2);
@@ -1690,7 +1760,7 @@ export class KuroCatEngine {
     if (isCatFacing && rY <= 0.1) {
       rowPos = rY + 0.68;
     } else if (!isCatFacing && rY + rSpan >= layout.totalRows - 0.1) {
-      rowPos = rY + rSpan - 0.68;
+      rowPos = rY + rSpan - (rSpan < 1 ? rSpan / 2 : 0.68);
     }
     return this.projectKeyboardPoint(uClamped, rowPos);
   }
@@ -2259,7 +2329,9 @@ export class KuroCatEngine {
       const isCatFacing = this.keyboardOrientation === 'cat';
       const lrBias = this.mouseLeftPress - this.mouseRightPress;
       const anyClickPress = Math.max(this.mouseLeftPress, this.mouseRightPress, this.mouseMiddlePress);
-      if (isCatFacing) {
+      if (this.pad.enabled) {
+        paw.target = this.padWorldPoint();
+      } else if (isCatFacing) {
         // 180° cat-facing: palm heel at TOP, LMB = inner/+X, RMB = outer/-X
         paw.target = {
           x: liveMouseX + 1.2 + lrBias * 6.4,
@@ -2365,6 +2437,7 @@ export class KuroCatEngine {
       this.drawMiniMouse(ctx);
       this.drawKeyboard(ctx);
       this.dafeiyu.renderForeground(ctx, this.lastDt, now, layout);
+      this.drawPadClick(ctx);
       if (this.showKeyBubbles && !this.privacyMode) {
         this.drawKeyBubbles(ctx);
         this.drawMouseBadges(ctx);
@@ -2386,6 +2459,7 @@ export class KuroCatEngine {
     // Layer 4: True-scale velvety cat paws (tapered idle legs / planted diagonal mouse support leg / bent curled chest paw / plump round poking paw!)
     this.drawPaw(ctx, this.leftPaw, breath);
     this.drawPaw(ctx, this.rightPaw, breath);
+    this.drawPadClick(ctx);
 
     // Layer 4.5: Alive cat comic FX (anger 💢 mark, tail-slam starburst & dust puffs, sleepy Zzz bubbles)
     this.drawCatAliveFx(ctx, performance.now(), breath);
@@ -3547,7 +3621,64 @@ export class KuroCatEngine {
     }
   }
 
+  private drawPadClick(ctx: CanvasRenderingContext2D): void {
+    const mark = this.pad.clickMark();
+    if (!mark || this.privacyMode) return;
+    const p = this.padWorldPoint(mark.point);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(this.kbTiltRad);
+    const flatten = this.padDepth / (this.padWidth * PAD_DEPTH_RATIO);
+    ctx.transform(1, 0, this.padShear * flatten, flatten, 0, 0);
+    ctx.globalAlpha *= mark.opacity;
+    drawClickMark(ctx, 6.8 * mark.scale);
+    ctx.restore();
+  }
+
   private drawMiniMouse(ctx: CanvasRenderingContext2D): void {
+    if (this.pad.enabled) {
+      const down = this.pad.pressed || this.mouseLeftDown || this.mouseRightDown;
+      ctx.save();
+      ctx.translate(this.mouseBaseX, this.mouseBaseY + this.deskHopY);
+      ctx.rotate(this.kbTiltRad);
+      const w = this.padWidth, d = this.padDepth;
+      const glassY = -d / 2 + .4 + this.padTravel;
+      // Draw each layer on the same converging desk plane as the keys.
+      ctx.save();
+      ctx.transform(1, 0, this.padShear, 1, 0, 0);
+      const outline = (inset: number, drop: number, radius: number) => {
+        const half = w / 2 - inset;
+        const y0 = -d / 2 + inset, y1 = d / 2 - inset;
+        this.trapezoidPath(ctx, half * this.deskWidthScale(this.padCenterY + y0),
+          half * this.deskWidthScale(this.padCenterY + y1), y0 + drop, y1 + drop, radius);
+      };
+      ctx.fillStyle = 'rgba(37,43,51,.18)';
+      outline(0, 2.8, 6.3);
+      ctx.fill();
+      const metal = ctx.createLinearGradient(-w / 2, 0, w / 2, d / 2);
+      metal.addColorStop(0, '#c6cbd0');
+      metal.addColorStop(.55, '#b2b7bc');
+      metal.addColorStop(1, '#939aa1');
+      ctx.fillStyle = metal;
+      outline(0, 0, 6.3);
+      ctx.fill();
+      const glass = ctx.createLinearGradient(0, glassY, w * .22, d / 2);
+      glass.addColorStop(0, '#fdfdfc');
+      glass.addColorStop(1, down ? '#dfe3e5' : '#e9ecee');
+      ctx.fillStyle = glass;
+      outline(.8, this.padTravel - .4, 5.7);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#167486';
+      for (const touch of this.pad.points) {
+        const p = this.padOffset(touch);
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, 2.85, 2.85 * d / (w * PAD_DEPTH_RATIO), 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      return;
+    }
     const mx = this.mouseBaseX + this.mouseOffsetX;
     const my = this.mouseBaseY + this.mouseOffsetY + this.deskHopY * 1.35;
     const rx = 18.5;
@@ -3691,6 +3822,8 @@ export class KuroCatEngine {
   private drawKeyboard(ctx: CanvasRenderingContext2D): void {
     const layout = getKeyboardLayout(this.keyboardLayout);
     const isCatFacing = this.keyboardOrientation === 'cat';
+    const mac = layout.id === 'macbook';
+    const finish = macbookFinishes[this.whiteKeyboard ? 'white' : 'black'];
     const is108 = this.keyboardLayout === '108';
     const padX = 7;
     const padY = 6;
@@ -3703,8 +3836,8 @@ export class KuroCatEngine {
 
     // True 3D desk trapezoid perspective: far edge (top) is narrower, near edge (bottom) is wider,
     // cleanly re-projected for BOTH cat-facing (Spacebar at narrow top) and viewer-facing (Esc/F-row at narrow top)!
-    const topHalfW = (this.kbWidth * 0.955) / 2;
-    const botHalfW = (this.kbWidth * 1.035) / 2;
+    const topHalfW = (this.kbWidth * this.deskWidthScale(-this.kbHeight / 2)) / 2;
+    const botHalfW = (this.kbWidth * this.deskWidthScale(this.kbHeight / 2)) / 2;
     const halfH = this.kbHeight / 2;
     const rowH = innerH / layout.totalRows;
     const unitW = innerW / layout.totalUnits;
@@ -3736,8 +3869,8 @@ export class KuroCatEngine {
       const y = -innerH / 2 + screenRowTop * rowH + gap * 0.5 + press * 2.0;
       const h = rSpan * rowH - gap - 0.8;
 
-      let topColor = '#f8f8f5';
-      let sideColor = '#d0d2cc';
+      let topColor = mac ? finish.top : '#f8f8f5';
+      let sideColor = mac ? finish.side : '#d0d2cc';
       if (press > 0.14) {
         topColor = this.customSkin
           ? this.customSkin.accentColor
@@ -3766,7 +3899,7 @@ export class KuroCatEngine {
 
       // When overdrawing an animated key onto the cached base, paint the inner keybed strip behind it
       if (press > 0.01) {
-        targetCtx.fillStyle = '#d4d6d1';
+        targetCtx.fillStyle = mac ? finish.plate : '#d4d6d1';
         targetCtx.fillRect(x - 0.4, -innerH / 2 + screenRowTop * rowH + gap * 0.5 - 0.4, w + 0.8, h + 3.8);
       }
 
@@ -3794,6 +3927,14 @@ export class KuroCatEngine {
         targetCtx.restore();
       }
 
+      if (mac) {
+        targetCtx.save();
+        targetCtx.translate(x + w / 2, y + (h - 0.9) / 2);
+        paintMacBookLegend(targetCtx, key, w, h - 0.9, isCatFacing,
+          press > 0.14 || isTailSelected ? '#111214' : finish.ink);
+        targetCtx.restore();
+        return;
+      }
       const legend = key.id === 'space' ? (isTailSelected ? '␣' : '') : key.id === 'esc' ? 'Esc' : key.label;
       if (legend) {
         const isWideWord = legend.length >= 3;
@@ -3839,7 +3980,7 @@ export class KuroCatEngine {
       const padMargin = 20;
       const cacheLogW = Math.ceil(botHalfW * 2 + padMargin * 2);
       const cacheLogH = Math.ceil(this.kbHeight + padMargin * 2);
-      const nextKey = `${this.keyboardLayout}|${this.keyboardOrientation}|${this.kbWidth}|${this.kbHeight}|${cacheScale}`;
+      const nextKey = `${this.keyboardLayout}|${this.whiteKeyboard}|${this.keyboardOrientation}|${this.kbWidth}|${this.kbHeight}|${cacheScale}`;
 
       if (!this.kbCacheCanvas || this.kbCacheKey !== nextKey) {
         if (!this.kbCacheCanvas) this.kbCacheCanvas = document.createElement('canvas');
@@ -3861,14 +4002,14 @@ export class KuroCatEngine {
           cg.fill();
           cg.restore();
 
-          cg.fillStyle = '#24262c';
+          cg.fillStyle = mac ? finish.shell : '#24262c';
           cg.strokeStyle = '#363840';
           cg.lineWidth = 1.1;
           this.trapezoidPath(cg, topHalfW, botHalfW, -halfH, halfH, 6.5);
           cg.fill();
           cg.stroke();
 
-          cg.fillStyle = '#d4d6d1';
+          cg.fillStyle = mac ? finish.plate : '#d4d6d1';
           this.trapezoidPath(cg, topHalfW - 5, botHalfW - 5, -halfH + 4, halfH - 4, 3.5);
           cg.fill();
 
@@ -3901,14 +4042,14 @@ export class KuroCatEngine {
       ctx.fill();
       ctx.restore();
 
-      ctx.fillStyle = '#24262c';
+      ctx.fillStyle = mac ? finish.shell : '#24262c';
       ctx.strokeStyle = pickerAccentTop;
       ctx.lineWidth = 2.0;
       this.trapezoidPath(ctx, topHalfW, botHalfW, -halfH, halfH, 6.5);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = '#d4d6d1';
+      ctx.fillStyle = mac ? finish.plate : '#d4d6d1';
       this.trapezoidPath(ctx, topHalfW - 5, botHalfW - 5, -halfH + 4, halfH - 4, 3.5);
       ctx.fill();
 

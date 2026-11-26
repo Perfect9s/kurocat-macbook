@@ -723,7 +723,7 @@ fn tool_definitions() -> Value {
                     "collarColor": { "type": "string", "enum": ["none", "red", "blue", "pink", "green"], "description": "Optional 3D collar & gold bell color." },
                     "headphoneMode": { "type": "string", "enum": ["auto", "on", "off"], "description": "Gaming headset mode." },
                     "scale": { "type": "number", "minimum": 0.2, "maximum": 1.5 },
-                    "keyboardLayout": { "type": "string", "enum": ["65", "108"] },
+                    "keyboardLayout": { "type": "string", "enum": ["65", "108", "macbook"] },
                     "keyboardOrientation": { "type": "string", "enum": ["cat", "viewer"] },
                     "tailKeyMode": { "type": "string", "enum": ["smart", "custom", "edge", "off"] },
                     "tailKeyIds": {
