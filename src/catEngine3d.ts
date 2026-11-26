@@ -715,6 +715,7 @@ export class KuroCatEngine3D {
   private readonly sDeskHop = new Spring1D(0, 9.2, 0.34);
 
   // Turntable 360° orbit camera springs (0 = iconic KuroCat elevated front angle)
+  private customOrbit = false;
   private orbitAzimuthTarget = 0;
   private orbitElevTarget = 24.5;
   private readonly sOrbitAz = new Spring1D(0, 4.2, 0.86);
@@ -2018,14 +2019,16 @@ export class KuroCatEngine3D {
   }
 
   public addOrbitDelta(dAzDeg: number, dElDeg: number): void {
+    this.customOrbit = true;
     this.orbitAzimuthTarget = clamp(this.orbitAzimuthTarget + dAzDeg, -165, 165);
     this.orbitElevTarget = clamp(this.orbitElevTarget + dElDeg, 6, 58);
     this.wakeRendering();
   }
 
   public resetOrbit(): void {
-    this.orbitAzimuthTarget = 0;
-    this.orbitElevTarget = 24.5;
+    this.customOrbit = false;
+    this.orbitAzimuthTarget = this.desk.pad.enabled ? -5 : 0;
+    this.orbitElevTarget = this.desk.pad.enabled ? 30 : 24.5;
     this.wakeRendering();
   }
 
@@ -2212,7 +2215,9 @@ export class KuroCatEngine3D {
   }
 
   public setTrackpad(enabled: boolean): void {
+    const changed = this.desk.pad.enabled !== enabled;
     this.desk.setTrackpad(enabled);
+    if (changed && !this.customOrbit) this.resetOrbit();
     this.wakeRendering();
   }
 

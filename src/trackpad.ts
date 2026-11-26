@@ -2,6 +2,10 @@ export interface PadPoint { id: number; x: number; y: number }
 
 // USB-C Magic Trackpad footprint: 160 × 114.9 mm. The inset keeps edge contacts on the glass.
 export const PAD_DEPTH_RATIO = 114.9 / 160;
+// Negative desk depth points toward the cat, regardless of which way the key legends face.
+export function padCenterDepth(keyboardDepth: number, padDepth: number): number {
+  return (padDepth - keyboardDepth) / 2;
+}
 export const PAD_USABLE = 0.90;
 const PRESS_MS = 220;
 const MARK_MS = 800;

@@ -1,5 +1,5 @@
 import { macbookFinishes } from './macbookFinish';
-import { Trackpad, padPosition, PAD_DEPTH_RATIO, PAD_USABLE, drawClickMark, type PadPoint } from './trackpad';
+import { Trackpad, padPosition, PAD_DEPTH_RATIO, padCenterDepth, PAD_USABLE, drawClickMark, type PadPoint } from './trackpad';
 import { paintMacBookLegend } from './macbookLegend';
 import {
   KEYBOARD_LAYOUTS,
@@ -251,7 +251,26 @@ export class KuroCatEngine {
   private readonly pad = new Trackpad();
   private readonly padWidth = 80;
   // The canvas keyboard uses a foreshortened top view.
-  private readonly padDepth = this.padWidth * PAD_DEPTH_RATIO * 0.82;
+  private get padDepth(): number {
+    const layout = getKeyboardLayout(this.keyboardLayout);
+    const unitWidth = this.kbWidth / layout.totalUnits;
+    const unitDepth = this.kbHeight / layout.totalRows;
+    return this.padWidth * PAD_DEPTH_RATIO * unitDepth / unitWidth;
+  }
+
+  private deskWidthScale(y: number): number {
+    // Shared with the keyboard chassis: 95.5% at the far edge, 103.5% at the near edge.
+    return 0.995 + 0.08 * y / this.kbHeight;
+  }
+
+  private get padCenterX(): number { return -(this.kbWidth + this.padWidth) / 2 - 7; }
+  private get padCenterY(): number {
+    return padCenterDepth(this.kbHeight, this.padDepth);
+  }
+  private get padShear(): number { return this.padCenterX * 0.08 / this.kbHeight; }
+  private get padTravel(): number {
+    return this.pad.pressed || this.mouseLeftDown || this.mouseRightDown ? 0.8 : 0;
+  }
 
   public setTrackpad(enabled: boolean): void {
     if (this.pad.enabled === enabled) return;
@@ -271,7 +290,8 @@ export class KuroCatEngine {
   }
 
   private padOffset(point = this.pad.target) {
-    return padPosition(point, this.keyboardOrientation === 'cat', this.padWidth * PAD_USABLE, this.padDepth * PAD_USABLE);
+    const p = padPosition(point, this.keyboardOrientation === 'cat', this.padWidth * PAD_USABLE, this.padDepth * PAD_USABLE);
+    return { x: p.x * this.deskWidthScale(this.padCenterY + p.y) + this.padShear * p.y, y: p.y + this.padTravel };
   }
 
   private padWorldPoint(point = this.pad.target) {
@@ -623,10 +643,12 @@ export class KuroCatEngine {
       this.mouseBaseY = isBigFish ? 322 : 334;
     }
     if (this.pad.enabled) {
-      this.kbCenterX += 16;
-      const separation = this.kbWidth * 0.518 + this.padWidth / 2 + 6;
-      this.mouseBaseX = this.kbCenterX - separation * Math.cos(this.kbTiltRad);
-      this.mouseBaseY = this.kbCenterY - separation * Math.sin(this.kbTiltRad);
+      this.kbCenterX += 24;
+      const x = this.padCenterX * this.deskWidthScale(this.padCenterY);
+      const y = this.padCenterY;
+      const c = Math.cos(this.kbTiltRad), s = Math.sin(this.kbTiltRad);
+      this.mouseBaseX = this.kbCenterX + c * x - s * y;
+      this.mouseBaseY = this.kbCenterY + s * x + c * y;
     }
   }
 
@@ -3605,6 +3627,9 @@ export class KuroCatEngine {
     const p = this.padWorldPoint(mark.point);
     ctx.save();
     ctx.translate(p.x, p.y);
+    ctx.rotate(this.kbTiltRad);
+    const flatten = this.padDepth / (this.padWidth * PAD_DEPTH_RATIO);
+    ctx.transform(1, 0, this.padShear * flatten, flatten, 0, 0);
     ctx.globalAlpha *= mark.opacity;
     drawClickMark(ctx, 6.8 * mark.scale);
     ctx.restore();
@@ -3617,28 +3642,38 @@ export class KuroCatEngine {
       ctx.translate(this.mouseBaseX, this.mouseBaseY + this.deskHopY);
       ctx.rotate(this.kbTiltRad);
       const w = this.padWidth, d = this.padDepth;
-      const glassY = -d / 2 + (down ? 1.1 : 0.4);
+      const glassY = -d / 2 + .4 + this.padTravel;
+      // Draw each layer on the same converging desk plane as the keys.
+      ctx.save();
+      ctx.transform(1, 0, this.padShear, 1, 0, 0);
+      const outline = (inset: number, drop: number, radius: number) => {
+        const half = w / 2 - inset;
+        const y0 = -d / 2 + inset, y1 = d / 2 - inset;
+        this.trapezoidPath(ctx, half * this.deskWidthScale(this.padCenterY + y0),
+          half * this.deskWidthScale(this.padCenterY + y1), y0 + drop, y1 + drop, radius);
+      };
       ctx.fillStyle = 'rgba(37,43,51,.18)';
-      this.roundRect(ctx, -w / 2, -d / 2 + 2.8, w, d, 6.3);
+      outline(0, 2.8, 6.3);
       ctx.fill();
       const metal = ctx.createLinearGradient(-w / 2, 0, w / 2, d / 2);
       metal.addColorStop(0, '#c6cbd0');
       metal.addColorStop(.55, '#b2b7bc');
       metal.addColorStop(1, '#939aa1');
       ctx.fillStyle = metal;
-      this.roundRect(ctx, -w / 2, -d / 2, w, d, 6.3);
+      outline(0, 0, 6.3);
       ctx.fill();
       const glass = ctx.createLinearGradient(0, glassY, w * .22, d / 2);
       glass.addColorStop(0, '#fdfdfc');
       glass.addColorStop(1, down ? '#dfe3e5' : '#e9ecee');
       ctx.fillStyle = glass;
-      this.roundRect(ctx, -w / 2 + .8, glassY, w - 1.6, d - 2.0, 5.7);
+      outline(.8, this.padTravel - .4, 5.7);
       ctx.fill();
+      ctx.restore();
       ctx.fillStyle = '#167486';
       for (const touch of this.pad.points) {
         const p = this.padOffset(touch);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 2.75, 0, Math.PI * 2);
+        ctx.ellipse(p.x, p.y, 2.85, 2.85 * d / (w * PAD_DEPTH_RATIO), 0, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -3801,8 +3836,8 @@ export class KuroCatEngine {
 
     // True 3D desk trapezoid perspective: far edge (top) is narrower, near edge (bottom) is wider,
     // cleanly re-projected for BOTH cat-facing (Spacebar at narrow top) and viewer-facing (Esc/F-row at narrow top)!
-    const topHalfW = (this.kbWidth * 0.955) / 2;
-    const botHalfW = (this.kbWidth * 1.035) / 2;
+    const topHalfW = (this.kbWidth * this.deskWidthScale(-this.kbHeight / 2)) / 2;
+    const botHalfW = (this.kbWidth * this.deskWidthScale(this.kbHeight / 2)) / 2;
     const halfH = this.kbHeight / 2;
     const rowH = innerH / layout.totalRows;
     const unitW = innerW / layout.totalUnits;

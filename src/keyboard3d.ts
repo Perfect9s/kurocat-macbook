@@ -1,5 +1,5 @@
 import { macbookFinishes } from './macbookFinish';
-import { Trackpad, padPosition, PAD_USABLE, PAD_DEPTH_RATIO, drawClickMark, type PadPoint } from './trackpad';
+import { Trackpad, padPosition, PAD_USABLE, PAD_DEPTH_RATIO, padCenterDepth, drawClickMark, type PadPoint } from './trackpad';
 import { paintMacBookLegend } from './macbookLegend';
 import * as THREE from 'three';
 import {
@@ -593,7 +593,7 @@ export class KeyboardAndMouse3D {
   private readonly padWidth = 0.75;
   private readonly padDepth = this.padWidth * PAD_DEPTH_RATIO;
   private readonly padHome = new THREE.Vector3();
-  private readonly clickSprite: THREE.Sprite;
+  private readonly clickMarker: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   private readonly padDots = new THREE.InstancedMesh(
     new THREE.CylinderGeometry(0.023, 0.023, 0.003, 24), new THREE.MeshBasicMaterial({ color: '#217982' }), 16);
   private readonly dotMatrix = new THREE.Matrix4();
@@ -874,15 +874,16 @@ export class KeyboardAndMouse3D {
     drawClickMark(pen, 46);
     const texture = new THREE.CanvasTexture(marker);
     texture.colorSpace = THREE.SRGBColorSpace;
-    this.clickSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    this.clickMarker = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({
       map: texture, transparent: true, depthTest: false, depthWrite: false,
     }));
-    this.clickSprite.visible = false;
-    this.clickSprite.renderOrder = 150;
+    this.clickMarker.rotation.x = -Math.PI / 2;
+    this.clickMarker.visible = false;
+    this.clickMarker.renderOrder = 150;
     this.padGroup.add(
       new THREE.Mesh(base, new THREE.MeshBasicMaterial({ color: '#aeb5bb' })),
       new THREE.Mesh(glass, new THREE.MeshBasicMaterial({ vertexColors: true })),
-      this.padDots, this.clickSprite);
+      this.padDots, this.clickMarker);
     this.padDots.count = 0;
     this.padDots.frustumCulled = false;
     this.padGroup.visible = false;
@@ -953,7 +954,7 @@ export class KeyboardAndMouse3D {
     this.capH = mac ? 0.016 : is108 ? 0.048 : 0.056;
 
     this.boardGroup.position.set(0.24, 0.015, 1.08);
-    this.padHome.set(-(W + this.padWidth) / 2 - 0.052, 0, 0)
+    this.padHome.set(-(W + this.padWidth) / 2 - 0.052, 0, padCenterDepth(D, this.padDepth))
       .applyQuaternion(this.boardGroup.quaternion).add(this.boardGroup.position);
     this.mouseHome.set(is108 ? -1.46 : -1.16, 0.015, 0.96);
 
@@ -1241,12 +1242,12 @@ export class KeyboardAndMouse3D {
     if (this.pad.enabled) {
       this.mouseGroup.position.copy(this.padHome);
       const mark = this.pad.clickMark();
-      this.clickSprite.visible = !!mark && privacyAlpha < 0.02;
-      if (mark && this.clickSprite.visible) {
+      this.clickMarker.visible = !!mark && privacyAlpha < 0.02;
+      if (mark && this.clickMarker.visible) {
         const p = padPosition(mark.point, false, this.padWidth * PAD_USABLE, this.padDepth * PAD_USABLE);
-        this.clickSprite.position.set(p.x, 0.049, p.y);
-        this.clickSprite.scale.setScalar(0.128 * mark.scale);
-        this.clickSprite.material.opacity = mark.opacity;
+        this.clickMarker.position.set(p.x, 0.049, p.y);
+        this.clickMarker.scale.setScalar(0.15 * mark.scale);
+        this.clickMarker.material.opacity = mark.opacity;
       }
       this.padGroup.position.y = leftDown || rightDown || this.pad.pressed ? -0.012 : 0;
     } else {
@@ -1274,7 +1275,7 @@ export class KeyboardAndMouse3D {
   }
 
   public dispose(): void {
-    this.clickSprite.material.map?.dispose();
+    this.clickMarker.material.map?.dispose();
     this.deskGroup.traverse((obj: THREE.Object3D) => {
       const mesh = obj as THREE.Mesh;
       if (mesh.geometry) mesh.geometry.dispose();
