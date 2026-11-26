@@ -56,6 +56,33 @@ try {
       engine.render();
     }
   };
+  if (is3d) {
+    const boardProjection = () => {
+      engine.update(1 / 60);
+      engine.camera.updateMatrixWorld();
+      const project = (x, z) => engine.desk.boardGroup.localToWorld(new THREE.Vector3(x, 0, z)).project(engine.camera);
+      const origin = project(0, 0);
+      return [project(1, 0), project(0, -0.5)].map(p => new THREE.Vector2(p.x - origin.x, p.y - origin.y).normalize());
+    };
+    for (const facing of ['cat', 'viewer']) {
+      engine.setKeyboardConfig('macbook', facing);
+      for (const custom of [false, true]) {
+        engine.resetOrbit();
+        if (custom) engine.addOrbitDelta(15, 10);
+        for (let i = 0; i < 120; i++) engine.update(1 / 60);
+        const mouseAxes = boardProjection();
+        for (const enabled of [true, false]) {
+          engine.setTrackpad(enabled);
+          if (!custom) engine.resetOrbit();
+          for (let i = 0; i < 60; i++) engine.update(1 / 60);
+          const axes = boardProjection();
+          check(axes.every((axis, i) => axis.distanceTo(mouseAxes[i]) < 1e-4),
+            'switching devices preserves projected keyboard axes in default and custom views');
+        }
+      }
+    }
+    engine.resetOrbit();
+  }
   for (const facing of ['cat', 'viewer']) {
     engine.setKeyboardConfig('macbook', facing, true);
     engine.setTrackpad(true);

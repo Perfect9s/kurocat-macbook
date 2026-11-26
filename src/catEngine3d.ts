@@ -715,7 +715,6 @@ export class KuroCatEngine3D {
   private readonly sDeskHop = new Spring1D(0, 9.2, 0.34);
 
   // Turntable 360° orbit camera springs (0 = iconic KuroCat elevated front angle)
-  private customOrbit = false;
   private orbitAzimuthTarget = 0;
   private orbitElevTarget = 24.5;
   private readonly sOrbitAz = new Spring1D(0, 4.2, 0.86);
@@ -2019,16 +2018,14 @@ export class KuroCatEngine3D {
   }
 
   public addOrbitDelta(dAzDeg: number, dElDeg: number): void {
-    this.customOrbit = true;
     this.orbitAzimuthTarget = clamp(this.orbitAzimuthTarget + dAzDeg, -165, 165);
     this.orbitElevTarget = clamp(this.orbitElevTarget + dElDeg, 6, 58);
     this.wakeRendering();
   }
 
   public resetOrbit(): void {
-    this.customOrbit = false;
-    this.orbitAzimuthTarget = this.desk.pad.enabled ? -5 : 0;
-    this.orbitElevTarget = this.desk.pad.enabled ? 30 : 24.5;
+    this.orbitAzimuthTarget = 0;
+    this.orbitElevTarget = 24.5;
     this.wakeRendering();
   }
 
@@ -2215,9 +2212,7 @@ export class KuroCatEngine3D {
   }
 
   public setTrackpad(enabled: boolean): void {
-    const changed = this.desk.pad.enabled !== enabled;
     this.desk.setTrackpad(enabled);
-    if (changed && !this.customOrbit) this.resetOrbit();
     this.wakeRendering();
   }
 
@@ -2470,8 +2465,7 @@ export class KuroCatEngine3D {
     if (camKey !== this.lastCamKey) {
       this.lastCamKey = camKey;
       const baseDist = is108 ? 9.7 : 8.1;
-      this.camAnchor.x = padVisible ? -0.12 : 0.06;
-      const reqHalfW = (is108 ? 1.98 : 1.56) + (padVisible ? 0.20 : 0);
+      const reqHalfW = is108 ? 1.98 : 1.56;
       const tanHalfFov = Math.tan((this.camera.fov * Math.PI) / 360);
       const aspectFitDist = reqHalfW / (tanHalfFov * Math.max(0.55, this.camera.aspect));
       const dist = Math.max(baseDist, aspectFitDist) / Math.max(0.25, this.renderScale);
@@ -2481,6 +2475,15 @@ export class KuroCatEngine3D {
         this.camAnchor.z + Math.cos(az) * Math.cos(el) * dist,
       );
       this.camera.lookAt(this.camAnchor);
+      // Extend the image on the left for the pad without moving the viewpoint.
+      if (padVisible) {
+        const aspect = this.camera.aspect;
+        const margin = 0.20 / reqHalfW;
+        this.camera.setViewOffset(aspect, 1, -aspect * margin, -margin / 2,
+          aspect * (1 + margin), 1 + margin);
+      } else if (this.camera.view?.enabled) {
+        this.camera.clearViewOffset();
+      }
     }
 
     // 2) Emotional state machine
