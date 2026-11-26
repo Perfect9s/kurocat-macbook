@@ -1,3 +1,47 @@
+# KuroCat MacBook Keyboard Edition
+
+在桌宠菜单里打开「系统」，在「键盘配列与方向」选 **MacBook**。桌上会换成黑色薄键帽、银灰色机身的美式 MacBook 键盘。可以让键盘面向自己或猫咪，再按一下左右 Command，观察猫爪分别落到空格的两侧。
+
+![MacBook 3D 键盘俯视细节](docs/macbook/macbook-3d-detail.png)
+
+| 3D · 面向观众 | 2D · 面向猫咪 |
+| --- | --- |
+| ![3D 桌宠和键盘](docs/macbook/macbook-3d-viewer.png) | ![2D 桌宠和键盘](docs/macbook/macbook-2d-cat.png) |
+
+参考机型为 2021 款 14 英寸 MacBook Pro（US ANSI）。78 个键位包含独立的 Touch ID 键帽，F4、F5、F6 分别显示 Spotlight、听写和勿扰。左右方向键按本版设计使用全高键帽，上下方向键各用半高。两种视图共享键位和图标。
+
+### 安装与输入权限
+
+1. 在本分支的 **MacBook keyboard verification** 成功运行中下载 **KuroCat-MacBook-arm64**。解压 GitHub 的制品包，再解压其中的应用包，将 **KuroCat MacBook.app** 拖入“应用程序”。
+2. 退出正在运行的上游 KuroCat，启动 MacBook 版。在「系统设置 → 隐私与安全性」按应用提示授予输入监控权限，按需授予辅助功能权限。开发构建采用临时签名；重新构建后 macOS 可能要求重新授权。
+3. 在菜单里选择布局。桌宠沿用 KuroCat 原有设置文件以及猫咪配置。两个版本共用设置、实例锁和 MCP 端口，适合交替运行。
+
+Fn/Globe 随系统投递的物理事件响应。系统独占的功能键可能只执行系统动作。Touch ID 仅绘制静态传感器。此版本的更新检查指向 Perfect9s 的 Fork。
+
+[下载构建制品](https://github.com/Perfect9s/kurocat-macbook/actions/workflows/macbook.yml) · [版本说明](docs/MACBOOK-RELEASE.md) · [架构与输入路径](docs/ARCHITECTURE.md)
+
+### 从源码构建
+
+使用 Node.js 22、npm、稳定版 Rust 和 Xcode 命令行工具。仓库提供 npm 锁文件。
+
+```sh
+git clone -b feature/macbook-layout https://github.com/Perfect9s/kurocat-macbook.git
+cd kurocat-macbook
+git remote add upstream https://github.com/qianyiai/kurocat.git
+npm ci
+npm run build
+node --experimental-strip-types --test tests/keyboard-layout.test.mjs
+cargo test --locked --manifest-path src-tauri/Cargo.toml
+rustup target add aarch64-apple-darwin
+npm run tauri -- build --target aarch64-apple-darwin --bundles app
+```
+
+本地开发使用 `npm run tauri:dev`。Apple Silicon 应用位于 `src-tauri/target/aarch64-apple-darwin/release/bundle/macos/KuroCat MacBook.app`。已有 MCP 客户端可调用 `update_settings`，参数为 `{"keyboardLayout":"macbook"}`，再用 `get_settings` 读取。OBS 预览可使用 `layout=macbook`。
+
+本分支基于 qianyiai/KuroCat 5.1.2。上游作者的许可证、猫咪素材声明及原项目说明见下文。[上游源码](https://github.com/qianyiai/kurocat) · [MIT 许可证](LICENSE)
+
+---
+
 # 🐈‍⬛ KuroCat — Open-Source Desktop Typing Cat Pet · 桌面打字小黑猫伴侣
 
 <p align="center">
