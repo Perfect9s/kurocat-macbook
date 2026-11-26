@@ -32,11 +32,11 @@ export const MACBOOK_LAYOUT: KeyboardLayoutDef = {
   keys: [
     ...row(0, [['esc', 'esc', 0x1b, 1.5], ...functionKeys, ['touchid', 'Touch ID', [], 13.5 / 13]]),
     ...row(1, [['grave', '`', 0xc0], ...letters('1234567890'), ['minus', '-', 0xbd],
-      ['equal', '=', 0xbb], ['bs', 'delete', 8, 2]]),
+      ['equal', '=', 0xbb], ['bs', '⌫', 8, 2]]),
     ...row(2, [['tab', 'tab', 9, 1.5], ...letters('QWERTYUIOP'), ['lb', '[', 0xdb],
       ['rb', ']', 0xdd], ['bslash', '\\', 0xdc, 1.5]]),
     ...row(3, [['caps', 'caps lock', 0x14, 1.75], ...letters('ASDFGHJKL'), ['semi', ';', 0xba],
-      ['quote', "'", 0xde], ['enter', 'return', 0x0d, 2.25]]),
+      ['quote', "'", 0xde], ['enter', '↩︎', 0x0d, 2.25]]),
     ...row(4, [['lshift', '⇧', [0xa0, 0x10], 2.25], ...letters('ZXCVBNM'),
       ['comma', ',', 0xbc], ['dot', '.', 0xbe], ['slash', '/', 0xbf], ['rshift', '⇧', 0xa1, 2.75]]),
     ...row(5, [['fn', 'fn', VK_MAC_FN], ['lctrl', 'control', [0xa2, 0x11]],

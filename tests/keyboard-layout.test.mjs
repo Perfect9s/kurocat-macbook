@@ -43,3 +43,13 @@ test('native transport IDs resolve independently of keycap text', () => {
   assert.equal(resolveKeyByVk(0xff, 'macbook'), null);
   assert.deepEqual(rect(layout.keys.find(k => k.id === 'down')), [13, 5.5, 1, 0.5]);
 });
+
+test('MacBook editing and Shift symbols stay attached to their physical keys', () => {
+  for (const [vk, id, symbol] of [[0x08, 'bs', '⌫'], [0x0d, 'enter', '↩︎'],
+    [0xa0, 'lshift', '⇧'], [0xa1, 'rshift', '⇧']]) {
+    const key = resolveKeyByVk(vk, 'macbook');
+    assert.deepEqual([key.id, key.label, key.bubble], [id, symbol, symbol]);
+  }
+  assert.equal(resolveKeyByVk(0x2e, 'macbook'), null);
+  assert.equal(resolveKeyByVk(0x10d, 'macbook'), null);
+});
