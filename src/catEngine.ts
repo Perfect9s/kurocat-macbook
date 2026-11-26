@@ -631,6 +631,10 @@ export class KuroCatEngine {
     this.syncLayoutPositions();
 
     if (layoutChanged) {
+      for (const anim of this.keyAnims.values()) {
+        anim.pressed = false;
+        anim.pressAmount = 0;
+      }
       this.heldKeys.clear();
       this.catTail.heldVks.clear();
       this.catTailHeldAt.clear();
@@ -1688,7 +1692,7 @@ export class KuroCatEngine {
     if (isCatFacing && rY <= 0.1) {
       rowPos = rY + 0.68;
     } else if (!isCatFacing && rY + rSpan >= layout.totalRows - 0.1) {
-      rowPos = rY + rSpan - Math.min(0.68, rSpan / 2 + 0.18);
+      rowPos = rY + rSpan - (rSpan < 1 ? rSpan / 2 : 0.68);
     }
     return this.projectKeyboardPoint(uClamped, rowPos);
   }

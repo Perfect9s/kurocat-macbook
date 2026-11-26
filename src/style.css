@@ -1084,12 +1084,13 @@ html.win7-ulw-mode .floating-side-menu {
   font-weight: 600;
 }
 
+.kb-layout-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 .kb-pill[data-kblayout="macbook"]::before {
   content: "";
-  display: inline-block;
+  display: block;
   width: 27px;
   height: 12px;
-  margin-right: 4px;
-  vertical-align: -1px;
+  margin: 0 auto 2px;
   background: url('./assets/macbook-preview.svg') center / contain no-repeat;
 }

@@ -2,10 +2,25 @@ name: MacBook keyboard verification
 on:
   push:
     branches: [feature/macbook-layout]
+    paths-ignore: ['docs/**', 'README*.md']
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node tests/render-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keyboard-screenshots
+          path: render-results/*.png
   verify:
     runs-on: macos-15
     steps:
