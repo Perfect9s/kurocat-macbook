@@ -43,6 +43,9 @@ try {
       check(is3d ? !engine.desk.resolveKey(code).down : !engine.keyAnims.get(pressed).pressed, 'keyup');
     }
   }
+  // Keep a gesture at its sampled time while software WebGL compiles or reads pixels.
+  const frameTime = performance.now();
+  Object.defineProperty(performance, 'now', {configurable: true, value: () => frameTime});
   const touches = [{id: 7, x: .16, y: .82}, {id: 11, x: .84, y: .18}];
   const renderFrame = () => {
     if (is3d) {
@@ -99,6 +102,7 @@ try {
     engine.setTrackpad(false);
     check(!pad.enabled && !pad.points.length, 'mouse mode clears contacts');
   }
+  delete performance.now;
   engine.setKeyboardConfig('macbook', 'viewer');
   if (is3d) {
     // Photograph the production board from above, retaining the installed key geometry and atlas.
