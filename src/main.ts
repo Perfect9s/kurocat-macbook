@@ -13,6 +13,8 @@ import { AgentCompanionController, type AgentCompanionEvent } from './agentCompa
 import { DEFAULT_BUILTIN_CATS, type CatSkinConfig } from './catSkins';
 import {
   getKeyboardLayout,
+  isKeyboardLayoutId,
+  normalizeKeyboardLayout,
   resolveKeyByVk,
   type KeyboardLayoutDef,
   type KeyboardLayoutId,
@@ -313,7 +315,7 @@ function wants3DNow(): boolean {
 function syncEngine3DState(): void {
   if (!engine3d) return;
   const activeCat = catList.find((c) => c.id === settings.catBreed) ?? catList[0];
-  const kbLayout: KeyboardLayoutId = settings.keyboardLayout === '108' ? '108' : '65';
+  const kbLayout: KeyboardLayoutId = normalizeKeyboardLayout(settings.keyboardLayout);
   const kbOrient: KeyboardOrientation = settings.keyboardOrientation === 'viewer' ? 'viewer' : 'cat';
   const tailMode: TailKeyMode =
     settings.tailKeyMode === 'custom' ||
@@ -484,7 +486,7 @@ function syncMenuUI(): void {
     updateScaleSliderVisual(settings.scale);
   }
 
-  const kbLayout: KeyboardLayoutId = settings.keyboardLayout === '108' ? '108' : '65';
+  const kbLayout: KeyboardLayoutId = normalizeKeyboardLayout(settings.keyboardLayout);
   const kbOrient: KeyboardOrientation = settings.keyboardOrientation === 'viewer' ? 'viewer' : 'cat';
   const tailMode: TailKeyMode =
     settings.tailKeyMode === 'custom' ||
@@ -1070,7 +1072,7 @@ async function bootstrap(): Promise<void> {
 
   btnToastOpenEl.addEventListener('click', (e) => {
     e.stopPropagation();
-    const url = latestUpdateInfo?.releaseUrl || 'https://github.com/qianyiai/kurocat/releases/latest';
+    const url = latestUpdateInfo?.releaseUrl || 'https://github.com/Perfect9s/kurocat-macbook/releases/latest';
     void invoke('open_release_page', { url });
   });
 
@@ -1410,7 +1412,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const kbLayoutAttr = target.dataset.kblayout;
-    if (kbLayoutAttr === '65' || kbLayoutAttr === '108') {
+    if (isKeyboardLayoutId(kbLayoutAttr)) {
       void applySettingsPatch({ keyboardLayout: kbLayoutAttr });
       closeContextMenu();
       return;

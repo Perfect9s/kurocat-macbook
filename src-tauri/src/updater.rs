@@ -3,9 +3,8 @@ use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Emitter};
 
-const QIANYI_API_LATEST: &str = "https://qianyi.one/kurocat/releases/latest.json";
-const REPO_API_LATEST: &str = "https://api.github.com/repos/qianyiai/kurocat/releases/latest";
-const REPO_RELEASES_PAGE: &str = "https://github.com/qianyiai/kurocat/releases/latest";
+const REPO_API_LATEST: &str = "https://api.github.com/repos/Perfect9s/kurocat-macbook/releases/latest";
+const REPO_RELEASES_PAGE: &str = "https://github.com/Perfect9s/kurocat-macbook/releases/latest";
 
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -606,13 +605,6 @@ fn fetch_json_from_url(url: &str, accept: Option<&str>, timeout_ms: i32) -> Resu
 
 #[cfg(windows)]
 fn fetch_latest_release_json() -> Result<String, String> {
-    // Primary: fast domestic CDN mirror (no proxy needed, zero GitHub API rate limit)
-    if let Ok(text) = fetch_json_from_url(QIANYI_API_LATEST, Some("Accept: application/json\r\n"), 8_000) {
-        if serde_json::from_str::<GhRelease>(&text).is_ok() {
-            return Ok(text);
-        }
-    }
-    // Fallback: official GitHub Releases API
     fetch_json_from_url(
         REPO_API_LATEST,
         Some("Accept: application/vnd.github+json\r\n"),
@@ -663,13 +655,6 @@ fn fetch_json_from_url(url: &str, accept: &str, connect_secs: &str, max_secs: &s
 
 #[cfg(not(windows))]
 fn fetch_latest_release_json() -> Result<String, String> {
-    // Primary: fast domestic CDN mirror (no proxy needed, zero GitHub API rate limit)
-    if let Ok(text) = fetch_json_from_url(QIANYI_API_LATEST, "Accept: application/json", "5", "9") {
-        if serde_json::from_str::<GhRelease>(&text).is_ok() {
-            return Ok(text);
-        }
-    }
-    // Fallback: official GitHub Releases API
     fetch_json_from_url(REPO_API_LATEST, "Accept: application/vnd.github+json", "10", "20")
 }
 
@@ -955,7 +940,7 @@ fn install_macos_update(app: &AppHandle, info: &UpdateInfo) -> Result<(), String
     }
 
     let app_bundle = find_current_macos_app_bundle()
-        .unwrap_or_else(|| PathBuf::from("/Applications/KuroCat.app"));
+        .unwrap_or_else(|| PathBuf::from("/Applications/KuroCat MacBook.app"));
 
     emit_progress(
         app,
@@ -1064,8 +1049,8 @@ fn install_macos_update(app: &AppHandle, info: &UpdateInfo) -> Result<(), String
            /usr/bin/xattr -dr com.apple.quarantine '{dst}' 2>/dev/null || true; \
            REQ=$(/usr/bin/codesign -d -r- '{dst}' 2>&1 || true); \
            if printf '%s' \"$REQ\" | /usr/bin/grep -q 'cdhash' && ! printf '%s' \"$REQ\" | /usr/bin/grep -q 'anchor apple'; then \
-             /usr/bin/tccutil reset Accessibility com.kurocat.pet >/dev/null 2>&1 || true; \
-             /usr/bin/tccutil reset ListenEvent com.kurocat.pet >/dev/null 2>&1 || true; \
+             /usr/bin/tccutil reset Accessibility com.perfect9s.kurocat-macbook >/dev/null 2>&1 || true; \
+             /usr/bin/tccutil reset ListenEvent com.perfect9s.kurocat-macbook >/dev/null 2>&1 || true; \
              sleep 0.2; \
            fi; \
            /usr/bin/open -n '{dst}'; \
@@ -1236,11 +1221,11 @@ mod tests {
     #[test]
     fn http_url_parser_handles_github_endpoints() {
         let (https, host, port, path) =
-            parse_http_url("https://api.github.com/repos/qianyiai/kurocat/releases/latest").unwrap();
+            parse_http_url("https://api.github.com/repos/Perfect9s/kurocat-macbook/releases/latest").unwrap();
         assert!(https);
         assert_eq!(host, "api.github.com");
         assert_eq!(port, 443);
-        assert_eq!(path, "/repos/qianyiai/kurocat/releases/latest");
+        assert_eq!(path, "/repos/Perfect9s/kurocat-macbook/releases/latest");
 
         let (https2, host2, port2, path2) =
             parse_http_url("http://127.0.0.1:8080/dl?v=1").unwrap();

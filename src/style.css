@@ -1083,3 +1083,13 @@ html.win7-ulw-mode .floating-side-menu {
   color: #c8f538;
   font-weight: 600;
 }
+
+.kb-pill[data-kblayout="macbook"]::before {
+  content: "";
+  display: inline-block;
+  width: 27px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  background: url('./assets/macbook-preview.svg') center / contain no-repeat;
+}

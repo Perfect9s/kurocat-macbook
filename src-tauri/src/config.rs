@@ -97,11 +97,11 @@ pub fn default_keyboard_layout() -> String {
 }
 
 pub fn normalize_keyboard_layout(raw: &str) -> String {
-    if raw.trim() == "108" {
-        "108".to_string()
-    } else {
-        "65".to_string()
-    }
+    match raw.trim() {
+        "108" => "108",
+        "macbook" => "macbook",
+        _ => "65",
+    }.to_string()
 }
 
 pub fn default_keyboard_orientation() -> String {
@@ -279,6 +279,7 @@ pub fn load_settings() -> AppSettings {
     if let Ok(content) = fs::read_to_string(&path) {
         if let Ok(mut parsed) = serde_json::from_str::<AppSettings>(&content) {
             parsed.scale = parsed.scale.clamp(0.20, 1.50);
+            parsed.keyboard_layout = normalize_keyboard_layout(&parsed.keyboard_layout);
             parsed.tail_key_mode = normalize_tail_key_mode(&parsed.tail_key_mode);
             parsed.tail_key_ids = normalize_tail_key_ids(&parsed.tail_key_ids);
             parsed.render_mode = normalize_render_mode(&parsed.render_mode);
@@ -383,7 +384,7 @@ pub fn set_windows_autostart(enabled: bool) -> Result<(), String> {
 pub fn set_windows_autostart(enabled: bool) -> Result<(), String> {
     let home = std::env::var("HOME").map_err(|e| e.to_string())?;
     let agents_dir = PathBuf::from(home).join("Library").join("LaunchAgents");
-    let plist_path = agents_dir.join("com.kurocat.pet.plist");
+    let plist_path = agents_dir.join("com.perfect9s.kurocat-macbook.plist");
 
     if enabled {
         fs::create_dir_all(&agents_dir).map_err(|e| e.to_string())?;
@@ -397,7 +398,7 @@ pub fn set_windows_autostart(enabled: bool) -> Result<(), String> {
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.kurocat.pet</string>
+    <string>com.perfect9s.kurocat-macbook</string>
     <key>ProgramArguments</key>
     <array>
         <string>{}</string>
@@ -551,6 +552,7 @@ mod tests {
             "autostart": false
         }"#;
         let parsed: AppSettings = serde_json::from_str(legacy).expect("legacy json should parse");
+        assert_eq!(parsed.keyboard_layout, default_keyboard_layout());
         assert_eq!(parsed.tail_key_mode, "smart");
         assert_eq!(parsed.tail_key_ids, default_tail_key_ids());
     }

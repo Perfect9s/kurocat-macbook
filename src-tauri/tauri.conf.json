@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "KuroCat",
+  "productName": "KuroCat MacBook",
   "version": "5.1.2",
-  "identifier": "com.kurocat.pet",
+  "identifier": "com.perfect9s.kurocat-macbook",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

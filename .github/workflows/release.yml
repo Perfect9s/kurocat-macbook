@@ -120,7 +120,7 @@ jobs:
               TAG="v$(node -p "require('./package.json').version")"
             fi
           fi
-          APP_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/KuroCat.app"
+          APP_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/KuroCat MacBook.app"
           test -d "$APP_PATH"
           echo "=== Verify macOS minimum version & Universal slices ==="
           plutil -p "$APP_PATH/Contents/Info.plist" | grep -i MinimumSystemVersion || true
@@ -134,7 +134,7 @@ jobs:
           cp -R "$APP_PATH" dmg_staging/
           ln -s /Applications dmg_staging/Applications
           hdiutil create -volname "KuroCat" -srcfolder dmg_staging -ov -format UDZO "KuroCat-${TAG}-macos-universal.dmg"
-          tar -czf "KuroCat-${TAG}-macos-universal.app.tar.gz" -C "src-tauri/target/universal-apple-darwin/release/bundle/macos" "KuroCat.app"
+          tar -czf "KuroCat-${TAG}-macos-universal.app.tar.gz" -C "src-tauri/target/universal-apple-darwin/release/bundle/macos" "KuroCat MacBook.app"
           ls -lh "KuroCat-${TAG}-macos-universal.dmg" "KuroCat-${TAG}-macos-universal.app.tar.gz"
           echo "=== Verify the app inside each release artifact ==="
           scripts/macos-codesign.sh verify-artifact "KuroCat-${TAG}-macos-universal.dmg" "$REQUIREMENT"

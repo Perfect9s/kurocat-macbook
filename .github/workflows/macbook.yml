@@ -1,0 +1,41 @@
+name: MacBook keyboard verification
+on:
+  push:
+    branches: [feature/macbook-layout]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - run: npm ci
+      - run: node --experimental-strip-types --test tests/keyboard-layout.test.mjs
+      - run: npm run build
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - run: npm run tauri -- build --target aarch64-apple-darwin --bundles app
+      - name: Verify Apple Silicon binary, MCP and app signature
+        run: |
+          dir="src-tauri/target/aarch64-apple-darwin/release/bundle/macos"
+          app="$dir/KuroCat MacBook.app"
+          binary="$app/Contents/MacOS/KuroCat"
+          lipo -verify_arch arm64 "$binary"
+          node tests/mcp-roundtrip.mjs "$binary"
+          scripts/macos-codesign.sh sign "$app"
+          codesign --verify --deep --strict "$app"
+          ditto -c -k --sequesterRsrc --keepParent "$app" KuroCat-MacBook-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KuroCat-MacBook-arm64
+          path: KuroCat-MacBook-arm64.zip

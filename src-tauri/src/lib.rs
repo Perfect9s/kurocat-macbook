@@ -5,6 +5,8 @@ mod config;
 mod game_detect;
 mod i18n;
 mod input_hook;
+#[cfg(any(target_os = "macos", test))]
+mod mac_keycodes;
 #[cfg(target_os = "macos")]
 mod macos_window;
 mod mcp;
