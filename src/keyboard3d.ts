@@ -1,5 +1,5 @@
 import { macbookFinishes } from './macbookFinish';
-import { Trackpad, padPosition, type PadPoint } from './trackpad';
+import { Trackpad, padPosition, PAD_USABLE, PAD_DEPTH_RATIO, drawClickMark, type PadPoint } from './trackpad';
 import { paintMacBookLegend } from './macbookLegend';
 import * as THREE from 'three';
 import {
@@ -590,8 +590,12 @@ export class KeyboardAndMouse3D {
   private whiteKeyboard = false;
   public readonly pad = new Trackpad();
   private readonly padGroup = new THREE.Group();
+  private readonly padWidth = 0.75;
+  private readonly padDepth = this.padWidth * PAD_DEPTH_RATIO;
+  private readonly padHome = new THREE.Vector3();
+  private readonly clickSprite: THREE.Sprite;
   private readonly padDots = new THREE.InstancedMesh(
-    new THREE.CylinderGeometry(0.014, 0.014, 0.002, 16), new THREE.MeshBasicMaterial({ color: '#217982' }), 16);
+    new THREE.CylinderGeometry(0.023, 0.023, 0.003, 24), new THREE.MeshBasicMaterial({ color: '#217982' }), 16);
   private readonly dotMatrix = new THREE.Matrix4();
 
   public setTrackpad(enabled: boolean): void {
@@ -606,8 +610,8 @@ export class KeyboardAndMouse3D {
     this.pad.points = points;
     this.padDots.count = Math.min(16, points.length);
     for (let i = 0; i < this.padDots.count; i++) {
-      const p = padPosition(points[i], false, 0.40, 0.26);
-      this.padDots.setMatrixAt(i, this.dotMatrix.makeTranslation(p.x, 0.035, p.y));
+      const p = padPosition(points[i], false, this.padWidth * PAD_USABLE, this.padDepth * PAD_USABLE);
+      this.padDots.setMatrixAt(i, this.dotMatrix.makeTranslation(p.x, 0.044, p.y));
     }
     this.padDots.instanceMatrix.needsUpdate = true;
   }
@@ -846,10 +850,39 @@ export class KeyboardAndMouse3D {
     );
     this.mouseShape.userData.leftBtn = leftBtn;
     this.mouseShape.userData.rightBtn = rightBtn;
+    const width = this.padWidth, depth = this.padDepth;
+    const base = makeRoundedSlabGeo(width, depth, 0.036, 0.055, 0);
+    const vertices = base.getAttribute('position');
+    // The underside tapers toward the front. The glass remains on the keyboard's plane.
+    for (let i = 0; i < vertices.count; i++) {
+      if (vertices.getY(i) < 0.001) vertices.setY(i, .017 * (vertices.getZ(i) / depth + .5));
+    }
+    const glass = makeRoundedSlabGeo(width - .012, depth - .012, .006, .051, .036);
+    const position = glass.getAttribute('position');
+    const colors = new Float32Array(position.count * 3);
+    const pale = new THREE.Color('#fdfdfb'), cool = new THREE.Color('#e5e9ec');
+    const shade = new THREE.Color();
+    for (let i = 0; i < position.count; i++) {
+      const t = .5 + .28 * position.getZ(i) / depth + .55 * position.getX(i) / width;
+      shade.copy(pale).lerp(cool, t).toArray(colors, i * 3);
+    }
+    glass.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const marker = document.createElement('canvas');
+    marker.width = marker.height = 96;
+    const pen = marker.getContext('2d')!;
+    pen.translate(48, 48);
+    drawClickMark(pen, 46);
+    const texture = new THREE.CanvasTexture(marker);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.clickSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: texture, transparent: true, depthTest: false, depthWrite: false,
+    }));
+    this.clickSprite.visible = false;
+    this.clickSprite.renderOrder = 150;
     this.padGroup.add(
-      new THREE.Mesh(makeRoundedSlabGeo(0.45, 0.30, 0.025, 0.033, 0), new THREE.MeshBasicMaterial({color: '#969ba0'})),
-      new THREE.Mesh(makeRoundedSlabGeo(0.44, 0.29, 0.008, 0.03, 0.025), new THREE.MeshBasicMaterial({color: '#d7dadc'})),
-      this.padDots);
+      new THREE.Mesh(base, new THREE.MeshBasicMaterial({ color: '#aeb5bb' })),
+      new THREE.Mesh(glass, new THREE.MeshBasicMaterial({ vertexColors: true })),
+      this.padDots, this.clickSprite);
     this.padDots.count = 0;
     this.padDots.frustumCulled = false;
     this.padGroup.visible = false;
@@ -903,7 +936,8 @@ export class KeyboardAndMouse3D {
     const isCatFacing = orientation === 'cat';
 
     // Sync mouse orientation (180° cat-facing vs 0° viewer-facing)
-    this.padGroup.rotation.y = isCatFacing ? Math.PI : 0;
+    this.padGroup.quaternion.copy(this.boardGroup.quaternion);
+    if (isCatFacing) this.padGroup.rotateY(Math.PI);
     this.mouseShape.rotation.y = isCatFacing ? -0.10 : Math.PI - 0.10;
     this.mouseLabelLMat.map = makeMouseLabelTexture('L', isCatFacing);
     this.mouseLabelRMat.map = makeMouseLabelTexture('R', isCatFacing);
@@ -919,6 +953,8 @@ export class KeyboardAndMouse3D {
     this.capH = mac ? 0.016 : is108 ? 0.048 : 0.056;
 
     this.boardGroup.position.set(0.24, 0.015, 1.08);
+    this.padHome.set(-(W + this.padWidth) / 2 - 0.052, 0, 0)
+      .applyQuaternion(this.boardGroup.quaternion).add(this.boardGroup.position);
     this.mouseHome.set(is108 ? -1.46 : -1.16, 0.015, 0.96);
 
     // Soft grounded desk shadow under keyboard
@@ -1128,9 +1164,9 @@ export class KeyboardAndMouse3D {
     this.deskGroup.updateMatrixWorld(false);
     this.mouseGroup.updateMatrixWorld(false);
     if (this.pad.enabled) {
-      const p = padPosition(this.pad.target, false, 0.40, 0.26);
+      const p = padPosition(this.pad.target, false, this.padWidth * PAD_USABLE, this.padDepth * PAD_USABLE);
       this.padGroup.updateWorldMatrix(true, false);
-      return out.set(p.x, this.pad.pressed ? 0.039 : 0.061, p.y).applyMatrix4(this.padGroup.matrixWorld);
+      return out.set(p.x, this.pad.pressed ? 0.047 : 0.067, p.y).applyMatrix4(this.padGroup.matrixWorld);
     }
     this.mouseShape.updateMatrixWorld(false);
     return out.set(0, 0.115, -0.05).applyMatrix4(this.mouseShape.matrixWorld);
@@ -1203,6 +1239,15 @@ export class KeyboardAndMouse3D {
     this.mouseOffset.copy(this.mouseFollow.step(this.mouseTarget, dt));
     this.mouseGroup.position.copy(this.mouseHome);
     if (this.pad.enabled) {
+      this.mouseGroup.position.copy(this.padHome);
+      const mark = this.pad.clickMark();
+      this.clickSprite.visible = !!mark && privacyAlpha < 0.02;
+      if (mark && this.clickSprite.visible) {
+        const p = padPosition(mark.point, false, this.padWidth * PAD_USABLE, this.padDepth * PAD_USABLE);
+        this.clickSprite.position.set(p.x, 0.049, p.y);
+        this.clickSprite.scale.setScalar(0.128 * mark.scale);
+        this.clickSprite.material.opacity = mark.opacity;
+      }
       this.padGroup.position.y = leftDown || rightDown || this.pad.pressed ? -0.012 : 0;
     } else {
       this.mouseGroup.position.add(this.mouseOffset);
@@ -1229,6 +1274,7 @@ export class KeyboardAndMouse3D {
   }
 
   public dispose(): void {
+    this.clickSprite.material.map?.dispose();
     this.deskGroup.traverse((obj: THREE.Object3D) => {
       const mesh = obj as THREE.Mesh;
       if (mesh.geometry) mesh.geometry.dispose();

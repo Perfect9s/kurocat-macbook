@@ -79,6 +79,23 @@ try {
     }
     screenshots['white-trackpad-' + facing] = canvas.toDataURL('image/png').split(',')[1];
     engine.onTrackpad([]);
+    renderFrame();
+    check(pad.clickMark()?.point.id === 7, 'a confirmed click remains visible after lift');
+    if (is3d) {
+      const desk = engine.desk;
+      const normal = obj => new THREE.Vector3(0, 1, 0).applyQuaternion(obj.getWorldQuaternion(new THREE.Quaternion()));
+      check(normal(desk.padGroup).dot(normal(desk.boardGroup)) > .99999, 'trackpad and keyboard share inclination');
+      const axes = obj => new THREE.Vector3(1, 0, 0).applyQuaternion(obj.getWorldQuaternion(new THREE.Quaternion()));
+      check(Math.abs(axes(desk.padGroup).dot(axes(desk.boardGroup))) > .99999, 'parallel long edges');
+      check(desk.clickSprite.visible && desk.padDots.count === 0, 'released click visible on its own');
+      for (const x of [-1,1]) for (const z of [-1,1]) {
+        const ndc = desk.padGroup.localToWorld(new THREE.Vector3(x * desk.padWidth / 2, .042, z * desk.padDepth / 2)).project(engine.camera);
+        check(Math.abs(ndc.x) < 1 && Math.abs(ndc.y) < 1, 'whole trackpad fits camera');
+      }
+    } else {
+      const a = engine.padWorldPoint({x: .2, y: .5}), b = engine.padWorldPoint({x: .8, y: .5});
+      check(Math.abs((b.y - a.y) / (b.x - a.x) - Math.tan(engine.kbTiltRad)) < 1e-5, 'paw and surface follow keyboard angle');
+    }
     engine.setTrackpad(false);
     check(!pad.enabled && !pad.points.length, 'mouse mode clears contacts');
   }

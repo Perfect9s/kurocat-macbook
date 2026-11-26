@@ -2460,11 +2460,13 @@ export class KuroCatEngine3D {
     const az = (this.sOrbitAz.step(this.orbitAzimuthTarget, dt) * Math.PI) / 180;
     const el = (this.sOrbitEl.step(this.orbitElevTarget, dt) * Math.PI) / 180;
     const is108 = this.desk.getLayoutId() === '108';
-    const camKey = `${az.toFixed(4)}|${el.toFixed(4)}|${is108 ? 1 : 0}|${this.camera.aspect.toFixed(4)}|${this.renderScale.toFixed(3)}`;
+    const padVisible = this.desk.pad.enabled;
+    const camKey = `${padVisible}|${az.toFixed(4)}|${el.toFixed(4)}|${is108 ? 1 : 0}|${this.camera.aspect.toFixed(4)}|${this.renderScale.toFixed(3)}`;
     if (camKey !== this.lastCamKey) {
       this.lastCamKey = camKey;
       const baseDist = is108 ? 9.7 : 8.1;
-      const reqHalfW = is108 ? 1.98 : 1.56;
+      this.camAnchor.x = padVisible ? -0.12 : 0.06;
+      const reqHalfW = (is108 ? 1.98 : 1.56) + (padVisible ? 0.20 : 0);
       const tanHalfFov = Math.tan((this.camera.fov * Math.PI) / 360);
       const aspectFitDist = reqHalfW / (tanHalfFov * Math.max(0.55, this.camera.aspect));
       const dist = Math.max(baseDist, aspectFitDist) / Math.max(0.25, this.renderScale);

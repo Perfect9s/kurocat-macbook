@@ -53,3 +53,21 @@ test('MacBook editing and Shift symbols stay attached to their physical keys', (
   assert.equal(resolveKeyByVk(0x2e, 'macbook'), null);
   assert.equal(resolveKeyByVk(0x10d, 'macbook'), null);
 });
+
+
+test('trackpad feedback outlives a tap, expires and clears on ambiguous clicks or mode changes', async () => {
+  const { Trackpad } = await import('../src/trackpad.ts');
+  const pad = new Trackpad();
+  const point = { id: 9, x: .13, y: .89 };
+  pad.setEnabled(true);
+  pad.press(point);
+  const now = performance.now();
+  assert.deepEqual(pad.clickMark(now + 400)?.point, point);
+  assert.ok(pad.clickMark(now + 730).opacity < 1);
+  assert.equal(pad.clickMark(now + 850), undefined);
+  pad.press();
+  assert.equal(pad.clickMark(), undefined);
+  pad.press(point);
+  pad.setEnabled(false);
+  assert.equal(pad.clickMark(), undefined);
+});
