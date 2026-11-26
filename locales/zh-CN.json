@@ -101,7 +101,9 @@
     "unlocked": "已解除鼠标穿透锁定，可正常拖动或右键设置",
     "tail_picker_hint": "🐾 点击键盘勾选尾巴按键（已选 {count} 键）",
     "tail_picker_clear": "清空",
-    "tail_picker_done": "完成"
+    "tail_picker_done": "完成",
+    "btn_admin": "管理员重启",
+    "game_admin_hint": "游戏以管理员运行，提权后可同步键鼠"
   },
   "tray": {
     "tooltip": "KuroCat",

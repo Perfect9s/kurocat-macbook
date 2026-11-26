@@ -101,7 +101,9 @@
     "unlocked": "已解除滑鼠穿透鎖定，可正常拖曳或右鍵設定",
     "tail_picker_hint": "🐾 點擊鍵盤勾選尾巴按鍵（已選 {count} 鍵）",
     "tail_picker_clear": "清空",
-    "tail_picker_done": "完成"
+    "tail_picker_done": "完成",
+    "btn_admin": "管理員重啟",
+    "game_admin_hint": "遊戲以管理員執行，提權後可同步鍵鼠"
   },
   "tray": {
     "tooltip": "KuroCat",

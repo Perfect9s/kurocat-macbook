@@ -101,7 +101,9 @@
     "unlocked": "클릭 통과 잠금이 해제되었습니다",
     "tail_picker_hint": "🐾 키보드를 클릭해 꼬리 키 지정 ({count}개 선택)",
     "tail_picker_clear": "초기화",
-    "tail_picker_done": "완료"
+    "tail_picker_done": "완료",
+    "btn_admin": "관리자 재시작",
+    "game_admin_hint": "관리자 권한 게임 · 승격 후 키 동기화"
   },
   "tray": {
     "tooltip": "KuroCat",

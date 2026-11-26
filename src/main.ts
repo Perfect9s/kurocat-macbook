@@ -125,8 +125,10 @@ let appVersion = '5.1.2';
 let latestUpdateInfo: UpdateInfo | null = null;
 let updateBusy = false;
 let dismissedVersion: string | null = loadDismissedVersion();
-let currentToastKind: 'update' | 'transient' | null = null;
+let currentToastKind: 'update' | 'admin' | 'transient' | null = null;
 let toastAutoHideTimer: number | null = null;
+const ADMIN_HINT_DISMISSED_KEY = 'kurocat_admin_game_hint_dismissed';
+let adminHintShownThisSession = false;
 let sliderDragging = false;
 let altOverride = false;
 let lastKnownLockState: boolean | null = null;
@@ -181,6 +183,7 @@ const updateToastEl = document.getElementById('update-toast') as HTMLDivElement;
 const updateToastTextEl = document.getElementById('update-toast-text') as HTMLSpanElement;
 const btnToastInstallEl = document.getElementById('btn-toast-install') as HTMLButtonElement;
 const btnToastUnlockEl = document.getElementById('btn-toast-unlock') as HTMLButtonElement;
+const btnToastAdminEl = document.getElementById('btn-toast-admin') as HTMLButtonElement | null;
 const btnToastOpenEl = document.getElementById('btn-toast-open') as HTMLButtonElement;
 const btnToastCloseEl = document.getElementById('btn-toast-close') as HTMLButtonElement;
 const tailPickerBarEl = document.getElementById('tail-picker-bar') as HTMLDivElement;
@@ -877,6 +880,29 @@ function formatLockedToastText(_startup = false): string {
   return isMacPlatform() ? `🔒 ${t('toast.locked_macos')}` : `🔒 ${t('toast.locked_windows')}`;
 }
 
+function formatAdminGameToastText(): string {
+  if (window.innerWidth < 260) {
+    return '🛡️';
+  }
+  return `🛡️ ${t('toast.game_admin_hint')}`;
+}
+
+function isAdminHintDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(ADMIN_HINT_DISMISSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveAdminHintDismissed(): void {
+  try {
+    window.localStorage.setItem(ADMIN_HINT_DISMISSED_KEY, '1');
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function showPendingUpdateToast(): boolean {
   if (
     updateBusy ||
@@ -900,7 +926,7 @@ function hideUpdateToast(restorePendingUpdate = false): void {
   }
   const prevKind = currentToastKind;
   currentToastKind = null;
-  if (restorePendingUpdate && prevKind === 'transient' && showPendingUpdateToast()) {
+  if (restorePendingUpdate && (prevKind === 'transient' || prevKind === 'admin') && showPendingUpdateToast()) {
     return;
   }
   if (!updateToastEl.classList.contains('hidden')) {
@@ -915,10 +941,11 @@ function showUpdateToast(
   options: {
     showInstall?: boolean;
     showUnlock?: boolean;
+    showAdmin?: boolean;
     showOpen?: boolean;
     autoHideMs?: number;
     busy?: boolean;
-    kind?: 'update' | 'transient';
+    kind?: 'update' | 'admin' | 'transient';
   } = {},
 ): void {
   if (toastAutoHideTimer !== null) {
@@ -930,6 +957,7 @@ function showUpdateToast(
   btnToastInstallEl.classList.toggle('hidden', !options.showInstall);
   btnToastInstallEl.disabled = Boolean(options.busy);
   btnToastUnlockEl.classList.toggle('hidden', !options.showUnlock);
+  btnToastAdminEl?.classList.toggle('hidden', !options.showAdmin);
   btnToastOpenEl.classList.toggle('hidden', !options.showOpen);
   updateToastEl.classList.remove('hidden');
   void invoke('set_update_banner_open', { open: true });
@@ -1087,6 +1115,12 @@ async function bootstrap(): Promise<void> {
     void applySettingsPatch({ clickThroughLocked: false });
   });
 
+  btnToastAdminEl?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideUpdateToast(false);
+    void invoke('restart_as_admin');
+  });
+
   btnToastOpenEl.addEventListener('click', (e) => {
     e.stopPropagation();
     const url = latestUpdateInfo?.releaseUrl || 'https://github.com/qianyiai/kurocat/releases/latest';
@@ -1099,6 +1133,9 @@ async function bootstrap(): Promise<void> {
       dismissedVersion = latestUpdateInfo.latestVersion;
       saveDismissedVersion(latestUpdateInfo.latestVersion);
       hideUpdateToast(false);
+    } else if (currentToastKind === 'admin') {
+      saveAdminHintDismissed();
+      hideUpdateToast(true);
     } else {
       hideUpdateToast(true);
     }
@@ -1296,13 +1333,29 @@ async function bootstrap(): Promise<void> {
     // non-Tauri or older backend
   }
 
-  await listen<{ active?: boolean; gameName?: string | null }>('kuro-game-active', (ev) => {
+  await listen<{ active?: boolean; gameName?: string | null; needsAdmin?: boolean }>('kuro-game-active', (ev) => {
     gameActive = Boolean(ev.payload?.active);
     const wearNow = shouldWearHeadphonesNow();
     engine.setGameActive(gameActive);
     engine3d?.setGameActive(gameActive);
     engine.setHeadphones(wearNow);
     engine3d?.setHeadphones(wearNow);
+
+    if (
+      isWindowsPlatform() &&
+      gameActive &&
+      ev.payload?.needsAdmin &&
+      !updateBusy &&
+      !adminHintShownThisSession &&
+      !isAdminHintDismissed()
+    ) {
+      adminHintShownThisSession = true;
+      showUpdateToast(formatAdminGameToastText(), {
+        showAdmin: true,
+        autoHideMs: 14000,
+        kind: 'admin',
+      });
+    }
   });
 
   let lastPetHover = false;

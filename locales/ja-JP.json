@@ -101,7 +101,9 @@
     "unlocked": "クリック透過ロックを解除しました",
     "tail_picker_hint": "🐾 キーをクリックしてしっぽ担当を選択（{count} 件）",
     "tail_picker_clear": "クリア",
-    "tail_picker_done": "完了"
+    "tail_picker_done": "完了",
+    "btn_admin": "管理者で再起動",
+    "game_admin_hint": "管理者実行中のゲーム · 昇格で入力同期"
   },
   "tray": {
     "tooltip": "KuroCat",

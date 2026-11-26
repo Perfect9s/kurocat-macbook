@@ -101,7 +101,9 @@
     "unlocked": "Click-through unlocked",
     "tail_picker_hint": "🐾 Click keys to assign tail pat ({count} selected)",
     "tail_picker_clear": "Clear",
-    "tail_picker_done": "Done"
+    "tail_picker_done": "Done",
+    "btn_admin": "Run as Admin",
+    "game_admin_hint": "Game runs as Admin · elevate to sync keys"
   },
   "tray": {
     "tooltip": "KuroCat",
