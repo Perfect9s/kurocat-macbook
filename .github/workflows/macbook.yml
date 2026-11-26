@@ -45,7 +45,7 @@ jobs:
           dir="src-tauri/target/aarch64-apple-darwin/release/bundle/macos"
           app="$dir/KuroCat MacBook.app"
           binary="$app/Contents/MacOS/KuroCat"
-          lipo -verify_arch arm64 "$binary"
+          lipo "$binary" -verify_arch arm64
           node tests/mcp-roundtrip.mjs "$binary"
           scripts/macos-codesign.sh sign "$app"
           codesign --verify --deep --strict "$app"
