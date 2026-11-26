@@ -24,5 +24,10 @@ fn main() {
             }
         }
     }
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        println!("cargo:rerun-if-changed=native/trackpad.c");
+        cc::Build::new().file("native/trackpad.c").compile("kurocat_trackpad");
+        println!("cargo:rustc-link-lib=framework=CoreFoundation");
+    }
     tauri_build::build()
 }

@@ -43,6 +43,46 @@ try {
       check(is3d ? !engine.desk.resolveKey(code).down : !engine.keyAnims.get(pressed).pressed, 'keyup');
     }
   }
+  const touches = [{id: 7, x: .16, y: .82}, {id: 11, x: .84, y: .18}];
+  const renderFrame = () => {
+    if (is3d) {
+      engine.update(1/60);
+      engine.renderer.render(engine.scene, engine.camera);
+    } else {
+      engine.update(1/60, performance.now());
+      engine.render();
+    }
+  };
+  for (const facing of ['cat', 'viewer']) {
+    engine.setKeyboardConfig('macbook', facing, true);
+    engine.setTrackpad(true);
+    engine.onTrackpad(touches);
+    const pad = is3d ? engine.desk.pad : engine.pad;
+    check(pad.points.length === 2 && pad.target === undefined, 'two independent contacts');
+    engine.onMouseDown('left');
+    check(pad.pressed && !pad.target, 'ambiguous click depresses entire surface');
+    engine.onMouseUp('left');
+    engine.onTrackpad([touches[0]]);
+    engine.onMouseDown('left', touches[0]);
+    check(pad.target?.id === 7, 'click goes to physical point');
+    engine.onMouseUp('left');
+    engine.onTrackpad(touches);
+    renderFrame();
+    if (is3d) {
+      check(engine.desk.padDots.count === 2 && !engine.desk.mouseShape.visible, '3D dot batch and mouse replacement');
+      check(engine.desk.whiteKeyboard, '3D white finish');
+      const local = engine.desk.padGroup.worldToLocal(engine.desk.mouseTopWorld(new THREE.Vector3()));
+      check(local.x < 0 && local.z > 0, '3D paw uses same surface as dots');
+    } else {
+      check(engine.whiteKeyboard, '2D white finish');
+      check((engine.padOffset(touches[0]).x < 0) === (facing === 'viewer'), '2D pad orientation');
+    }
+    screenshots['white-trackpad-' + facing] = canvas.toDataURL('image/png').split(',')[1];
+    engine.onTrackpad([]);
+    engine.setTrackpad(false);
+    check(!pad.enabled && !pad.points.length, 'mouse mode clears contacts');
+  }
+  engine.setKeyboardConfig('macbook', 'viewer');
   if (is3d) {
     // Photograph the production board from above, retaining the installed key geometry and atlas.
     const board = engine.desk.boardGroup;

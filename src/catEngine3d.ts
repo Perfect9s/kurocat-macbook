@@ -5,6 +5,7 @@ import {
   type CatEarShape,
   type CatSkinConfig,
 } from './catSkins';
+import type { PadPoint } from './trackpad';
 import type { KeyboardLayoutId } from './keyboardLayout';
 import type { KeyboardOrientation, TailKeyMode } from './catEngine';
 import { DEFAULT_TAIL_KEY_IDS } from './catEngine';
@@ -1965,8 +1966,8 @@ export class KuroCatEngine3D {
     }
   }
 
-  public setKeyboardConfig(layout: KeyboardLayoutId, orient: KeyboardOrientation): void {
-    this.desk.rebuildBoard(layout, orient);
+  public setKeyboardConfig(layout: KeyboardLayoutId, orient: KeyboardOrientation, white = false): void {
+    this.desk.rebuildBoard(layout, orient, white);
     this.paws.L.keyId = null;
     this.paws.R.keyId = null;
     this.tailTap.keyId = null;
@@ -2210,7 +2211,20 @@ export class KuroCatEngine3D {
     }
   }
 
-  public onMouseDown(btn: string): void {
+  public setTrackpad(enabled: boolean): void {
+    this.desk.setTrackpad(enabled);
+    this.wakeRendering();
+  }
+
+  public onTrackpad(points: readonly PadPoint[]): void {
+    if (!this.desk.pad.enabled) return;
+    this.desk.setContacts(points);
+    if (points.length) this.lastMouse = this.elapsed;
+    this.wakeRendering();
+  }
+
+  public onMouseDown(btn: string, point?: PadPoint): void {
+    if (this.desk.pad.enabled) this.desk.pad.press(point);
     this.wake('abrupt');
     this.lastMouse = this.elapsed;
     this.paws.L.lastActive = this.elapsed;

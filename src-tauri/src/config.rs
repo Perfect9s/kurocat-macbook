@@ -183,6 +183,10 @@ pub struct AppSettings {
     pub mcp_port: u16,
     #[serde(default = "default_keyboard_layout")]
     pub keyboard_layout: String,
+    #[serde(default)]
+    pub trackpad_enabled: bool,
+    #[serde(default)]
+    pub white_keyboard: bool,
     #[serde(default = "default_keyboard_orientation")]
     pub keyboard_orientation: String,
     #[serde(default = "default_privacy_password_guard")]
@@ -228,6 +232,8 @@ impl Default for AppSettings {
             mcp_enabled: default_mcp_enabled(),
             mcp_port: default_mcp_port(),
             keyboard_layout: default_keyboard_layout(),
+            trackpad_enabled: false,
+            white_keyboard: false,
             keyboard_orientation: default_keyboard_orientation(),
             privacy_password_guard: default_privacy_password_guard(),
             tail_key_mode: default_tail_key_mode(),
@@ -553,6 +559,11 @@ mod tests {
         }"#;
         let parsed: AppSettings = serde_json::from_str(legacy).expect("legacy json should parse");
         assert_eq!(parsed.keyboard_layout, default_keyboard_layout());
+        assert!(!parsed.white_keyboard && !parsed.trackpad_enabled);
+        let enabled = AppSettings { white_keyboard: true, trackpad_enabled: true, ..parsed.clone() };
+        let saved = serde_json::to_string(&enabled).unwrap();
+        let restored: AppSettings = serde_json::from_str(&saved).unwrap();
+        assert!(restored.white_keyboard && restored.trackpad_enabled);
         assert_eq!(parsed.tail_key_mode, "smart");
         assert_eq!(parsed.tail_key_ids, default_tail_key_ids());
     }

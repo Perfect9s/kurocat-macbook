@@ -38,6 +38,7 @@ jobs:
       - run: npm ci
       - run: node --experimental-strip-types --test tests/keyboard-layout.test.mjs
       - run: npm run build
+      - run: clang -Wall -Werror tests/trackpad-native.c -framework CoreFoundation -o "$RUNNER_TEMP/pad-test" && "$RUNNER_TEMP/pad-test"
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: npm run tauri -- build --target aarch64-apple-darwin --bundles app
       - name: Verify Apple Silicon binary, MCP and app signature

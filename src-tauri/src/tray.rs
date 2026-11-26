@@ -240,6 +240,16 @@ fn build_tray_menu(
         &[&kb_65, &kb_108, &kb_macbook, &kb_sep, &kb_cat, &kb_viewer],
     )?;
 
+    let finish_black = MenuItem::with_id(app, "finish_black", t(lang, "menu.kb_black"), true, None::<&str>)?;
+    let finish_white = MenuItem::with_id(app, "finish_white", t(lang, "menu.kb_white"), true, None::<&str>)?;
+    kb_menu.append(&Submenu::with_items(app, t(lang, "menu.kb_finish"), true, &[&finish_black, &finish_white])?)?;
+    #[cfg(target_os = "macos")]
+    {
+        let mouse = MenuItem::with_id(app, "device_mouse", t(lang, "menu.mouse"), true, None::<&str>)?;
+        let pad = MenuItem::with_id(app, "device_pad", t(lang, "menu.trackpad"), true, None::<&str>)?;
+        kb_menu.append(&Submenu::with_items(app, t(lang, "menu.pointer"), true, &[&mouse, &pad])?)?;
+    }
+
     let tail_smart = MenuItem::with_id(app, "tail_smart", t(lang, "tray.tail_smart"), true, None::<&str>)?;
     let tail_custom = MenuItem::with_id(app, "tail_custom", t(lang, "tray.tail_custom"), true, None::<&str>)?;
     let tail_edge = MenuItem::with_id(app, "tail_edge", t(lang, "tray.tail_edge"), true, None::<&str>)?;
@@ -778,6 +788,19 @@ pub fn setup_tray(app: &AppHandle, initial: &AppSettings) -> tauri::Result<()> {
                 "scale_100" => apply_scale_and_save(app, 1.0),
                 "scale_125" => apply_scale_and_save(app, 1.25),
                 "scale_150" => apply_scale_and_save(app, 1.5),
+                id @ ("finish_black" | "finish_white" | "device_mouse" | "device_pad") => {
+                    let state = app.state::<AppState>();
+                    let updated = {
+                        let mut settings = state.settings.lock().unwrap();
+                        match id {
+                            "finish_black" | "finish_white" => settings.white_keyboard = id == "finish_white",
+                            _ => settings.trackpad_enabled = id == "device_pad",
+                        }
+                        crate::config::save_settings(&settings);
+                        settings.clone()
+                    };
+                    let _ = app.emit("kuro-settings", updated);
+                }
                 "kb_65" => apply_keyboard_layout_and_save(app, "65"),
                 "kb_macbook" => apply_keyboard_layout_and_save(app, "macbook"),
                 "kb_108" => apply_keyboard_layout_and_save(app, "108"),

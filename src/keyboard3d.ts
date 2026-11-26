@@ -1,3 +1,5 @@
+import { macbookFinishes } from './macbookFinish';
+import { Trackpad, padPosition, type PadPoint } from './trackpad';
 import { paintMacBookLegend } from './macbookLegend';
 import * as THREE from 'three';
 import {
@@ -288,8 +290,9 @@ function getKeycapAtlas(
   layoutId: KeyboardLayoutId,
   keys: readonly KeySpec[],
   rotated180: boolean,
+  white: boolean,
 ): KeyAtlasData {
-  const cacheKey = `${layoutId}|${rotated180 ? 1 : 0}`;
+  const cacheKey = `${layoutId}|${rotated180 ? 1 : 0}|${white}`;
   const cached = keyAtlasCache.get(cacheKey);
   if (cached) return cached;
 
@@ -355,7 +358,8 @@ function getKeycapAtlas(
     g.fillRect(ox, oy, CELL, CELL);
 
     if (layoutId === 'macbook') {
-      g.fillStyle = '#27282c';
+      const finish = macbookFinishes[white ? 'white' : 'black'];
+      g.fillStyle = finish.top;
       g.fillRect(ox, oy, CELL, CELL);
       g.save();
       g.translate(ox + CELL / 2, oy + CELL / 2);
@@ -363,7 +367,7 @@ function getKeycapAtlas(
       // The square atlas tile will stretch onto a rectangular cap. Paint in cap space.
       const aspect = item.spec.uWidth / (item.spec.rowSpan ?? 1);
       g.scale(1 / aspect, 1);
-      paintMacBookLegend(g, item.spec, tile * aspect, tile, rotated180);
+      paintMacBookLegend(g, item.spec, tile * aspect, tile, rotated180, finish.ink);
       g.restore();
     } else if (item.label) {
       g.save();
@@ -582,7 +586,31 @@ export class KeyboardAndMouse3D {
   private readonly kbShadowMat: THREE.MeshBasicMaterial;
   private readonly shadowTex = makeSoftShadowTexture();
 
-  private readonly macSideColor = new THREE.Color('#18191c');
+  private readonly macSideColor = new THREE.Color();
+  private whiteKeyboard = false;
+  public readonly pad = new Trackpad();
+  private readonly padGroup = new THREE.Group();
+  private readonly padDots = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.014, 0.014, 0.002, 16), new THREE.MeshBasicMaterial({ color: '#217982' }), 16);
+  private readonly dotMatrix = new THREE.Matrix4();
+
+  public setTrackpad(enabled: boolean): void {
+    this.pad.setEnabled(enabled);
+    this.padGroup.visible = enabled;
+    this.mouseShape.visible = !enabled;
+    if (!enabled) this.padDots.count = 0;
+  }
+
+  public setContacts(points: readonly PadPoint[]): void {
+    if (!this.pad.enabled) return;
+    this.pad.points = points;
+    this.padDots.count = Math.min(16, points.length);
+    for (let i = 0; i < this.padDots.count; i++) {
+      const p = padPosition(points[i], false, 0.40, 0.26);
+      this.padDots.setMatrixAt(i, this.dotMatrix.makeTranslation(p.x, 0.035, p.y));
+    }
+    this.padDots.instanceMatrix.needsUpdate = true;
+  }
   private readonly sideColorBase = new THREE.Color('#dad7cd');
   private readonly sideColorMod = new THREE.Color('#c4c0b4');
   private readonly sideColorOrange = new THREE.Color('#c4741a');
@@ -818,6 +846,14 @@ export class KeyboardAndMouse3D {
     );
     this.mouseShape.userData.leftBtn = leftBtn;
     this.mouseShape.userData.rightBtn = rightBtn;
+    this.padGroup.add(
+      new THREE.Mesh(makeRoundedSlabGeo(0.45, 0.30, 0.025, 0.033, 0), new THREE.MeshBasicMaterial({color: '#969ba0'})),
+      new THREE.Mesh(makeRoundedSlabGeo(0.44, 0.29, 0.008, 0.03, 0.025), new THREE.MeshBasicMaterial({color: '#d7dadc'})),
+      this.padDots);
+    this.padDots.count = 0;
+    this.padDots.frustumCulled = false;
+    this.padGroup.visible = false;
+    this.mouseGroup.add(this.padGroup);
     this.deskGroup.add(this.mouseGroup);
 
     scene.add(this.deskGroup);
@@ -838,12 +874,16 @@ export class KeyboardAndMouse3D {
     this.mouseBodyMat.needsUpdate = true;
   }
 
-  public rebuildBoard(layoutId: KeyboardLayoutId, orientation: KeyboardOrientation): void {
+  public rebuildBoard(layoutId: KeyboardLayoutId, orientation: KeyboardOrientation, white = false): void {
+    white = white && layoutId === 'macbook';
     // Skip redundant rebuild if nothing changed and meshes already exist
-    if (this.sideInstanced && this.layoutId === layoutId && this.orientation === orientation) {
+    if (this.sideInstanced && this.layoutId === layoutId && this.orientation === orientation && this.whiteKeyboard === white) {
       return;
     }
 
+    this.whiteKeyboard = white;
+    const finish = macbookFinishes[white ? 'white' : 'black'];
+    this.macSideColor.set(white ? finish.side : '#18191c');
     this.layoutId = layoutId;
     this.orientation = orientation;
     this.keys.clear();
@@ -863,6 +903,7 @@ export class KeyboardAndMouse3D {
     const isCatFacing = orientation === 'cat';
 
     // Sync mouse orientation (180° cat-facing vs 0° viewer-facing)
+    this.padGroup.rotation.y = isCatFacing ? Math.PI : 0;
     this.mouseShape.rotation.y = isCatFacing ? -0.10 : Math.PI - 0.10;
     this.mouseLabelLMat.map = makeMouseLabelTexture('L', isCatFacing);
     this.mouseLabelRMat.map = makeMouseLabelTexture('R', isCatFacing);
@@ -892,9 +933,9 @@ export class KeyboardAndMouse3D {
     const bezelGeo = makeRoundedSlabGeo(W - 0.014, D - 0.014, 0.014, 0.060, this.boardH - 0.008);
     const plateGeo = makeRoundedSlabGeo(W - 0.062, D - 0.062, 0.008, 0.044, this.boardH + 0.004);
     const chassisGeo = mergeStaticGeometries([
-      { geo: baseGeo, color: mac ? '#737781' : '#202229' },
-      { geo: bezelGeo, color: mac ? '#b2b5bd' : '#2c2f38' },
-      { geo: plateGeo, color: mac ? '#35363b' : '#181a20' },
+      { geo: baseGeo, color: mac ? finish.base : '#202229' },
+      { geo: bezelGeo, color: mac ? finish.bezel : '#2c2f38' },
+      { geo: plateGeo, color: mac ? finish.plate : '#181a20' },
     ]);
     if (mac) {
       // Bake a broad anodized-aluminum highlight into the shared chassis vertex colors.
@@ -914,7 +955,7 @@ export class KeyboardAndMouse3D {
 
     // Single Texture Atlas + 2 InstancedMeshes for ALL 67 or 108 keycaps (2 draw calls total!)
     const keyCount = layout.keys.length;
-    const atlas = getKeycapAtlas(layoutId, layout.keys, isCatFacing);
+    const atlas = getKeycapAtlas(layoutId, layout.keys, isCatFacing, white);
 
     const chiclet = mac ? makeChicletGeometry() : null;
     if (chiclet) this.boardDisposables.push(chiclet.side);
@@ -1086,6 +1127,11 @@ export class KeyboardAndMouse3D {
   public mouseTopWorld(out = new THREE.Vector3()): THREE.Vector3 {
     this.deskGroup.updateMatrixWorld(false);
     this.mouseGroup.updateMatrixWorld(false);
+    if (this.pad.enabled) {
+      const p = padPosition(this.pad.target, false, 0.40, 0.26);
+      this.padGroup.updateWorldMatrix(true, false);
+      return out.set(p.x, this.pad.pressed ? 0.039 : 0.061, p.y).applyMatrix4(this.padGroup.matrixWorld);
+    }
     this.mouseShape.updateMatrixWorld(false);
     return out.set(0, 0.115, -0.05).applyMatrix4(this.mouseShape.matrixWorld);
   }
@@ -1155,7 +1201,12 @@ export class KeyboardAndMouse3D {
 
     this.mouseTarget.multiplyScalar(1 - approach(1.6, dt));
     this.mouseOffset.copy(this.mouseFollow.step(this.mouseTarget, dt));
-    this.mouseGroup.position.copy(this.mouseHome).add(this.mouseOffset);
+    this.mouseGroup.position.copy(this.mouseHome);
+    if (this.pad.enabled) {
+      this.padGroup.position.y = leftDown || rightDown || this.pad.pressed ? -0.012 : 0;
+    } else {
+      this.mouseGroup.position.add(this.mouseOffset);
+    }
 
     this.leftPress += ((leftDown ? 1 : 0) - this.leftPress) * approach(32, dt);
     this.rightPress += ((rightDown ? 1 : 0) - this.rightPress) * approach(32, dt);

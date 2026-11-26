@@ -13,6 +13,8 @@ mod mcp;
 mod obs;
 mod privacy;
 mod tray;
+#[cfg(target_os = "macos")]
+mod trackpad;
 mod updater;
 #[cfg(windows)]
 mod win7_layered;
@@ -355,6 +357,14 @@ struct TailPickerBounds {
     toolbar: [f64; 4],
     keyboard: [f64; 4],
     close_button: [f64; 4],
+}
+
+#[tauri::command]
+fn trackpad_unavailable() -> bool {
+    #[cfg(target_os = "macos")]
+    { trackpad::UNAVAILABLE.load(Ordering::Relaxed) }
+    #[cfg(not(target_os = "macos"))]
+    { true }
 }
 
 #[tauri::command]
@@ -2888,6 +2898,8 @@ pub fn run() {
             }
 
             tray::setup_tray(&handle, &s)?;
+            #[cfg(target_os = "macos")]
+            trackpad::watch(handle.clone());
             input_hook::start_global_hooks(handle.clone());
             privacy::start_password_privacy_watcher(
                 handle.clone(),
@@ -2988,6 +3000,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_settings,
+            trackpad_unavailable,
             get_resolved_locale,
             trim_idle_memory,
             get_cats,

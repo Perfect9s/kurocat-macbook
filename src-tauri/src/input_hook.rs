@@ -19,8 +19,13 @@ pub enum InputEvent {
         vk: u32,
         scan: u32,
     },
+    #[cfg(target_os = "macos")]
+    Trackpad { points: Vec<crate::trackpad::PadPoint> },
     MouseDown {
         button: String,
+        #[cfg(target_os = "macos")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        point: Option<crate::trackpad::PadPoint>,
     },
     MouseUp {
         button: String,
@@ -70,6 +75,11 @@ static KEY_EVENTS_RECEIVED: AtomicU64 = AtomicU64::new(0);
 static ALT_HELD: AtomicBool = AtomicBool::new(false);
 static HOOKS_PAUSED: AtomicBool = AtomicBool::new(false);
 static PASSWORD_PRIVACY_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+#[cfg(target_os = "macos")]
+pub fn trackpad_suspended() -> bool {
+    HOOKS_PAUSED.load(Ordering::Relaxed) || PASSWORD_PRIVACY_ACTIVE.load(Ordering::Relaxed)
+}
 
 pub fn set_password_privacy_active(active: bool) {
     PASSWORD_PRIVACY_ACTIVE.store(active, Ordering::SeqCst);
@@ -527,6 +537,8 @@ pub fn start_global_hooks(app: AppHandle) {
                         emit_input(
                             &app,
                             InputEvent::MouseDown {
+                                #[cfg(target_os = "macos")]
+                                point: crate::trackpad::click_point(),
                                 button: btn.to_string(),
                             },
                         );

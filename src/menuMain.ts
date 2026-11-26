@@ -1,4 +1,5 @@
 import './style.css';
+import { syncDeskOptions } from './deskOptions';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { DEFAULT_TAIL_KEY_IDS, type KeyboardOrientation, type TailKeyMode } from './catEngine';
@@ -26,6 +27,8 @@ interface AppSettings {
   mcpEnabled: boolean;
   mcpPort: number;
   keyboardLayout: KeyboardLayoutId;
+  trackpadEnabled: boolean;
+  whiteKeyboard: boolean;
   keyboardOrientation: KeyboardOrientation;
   privacyPasswordGuard: boolean;
   tailKeyMode: TailKeyMode;
@@ -74,6 +77,8 @@ let settings: AppSettings = {
   mcpEnabled: true,
   mcpPort: 27420,
   keyboardLayout: '65',
+  trackpadEnabled: false,
+  whiteKeyboard: false,
   keyboardOrientation: 'cat',
   privacyPasswordGuard: true,
   tailKeyMode: 'smart',
@@ -231,6 +236,7 @@ function syncUI(): void {
 
   const kbLayout: KeyboardLayoutId = normalizeKeyboardLayout(settings.keyboardLayout);
   const kbOrient: KeyboardOrientation = settings.keyboardOrientation === 'viewer' ? 'viewer' : 'cat';
+  syncDeskOptions(settings, isMacPlatform(), padUnavailable);
   document.querySelectorAll<HTMLButtonElement>('[data-kblayout]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.kblayout === kbLayout);
   });
@@ -469,6 +475,8 @@ async function triggerManualUpdateCheck(): Promise<void> {
   }
 }
 
+let padUnavailable = false;
+
 async function bootstrap(): Promise<void> {
   if (isMacPlatform()) {
     const shortcutBtn = document.getElementById('btn-desktop-shortcut');
@@ -493,7 +501,7 @@ async function bootstrap(): Promise<void> {
     }
 
     const target = (e.target as HTMLElement).closest<HTMLElement>(
-      '[data-action], [data-breed], [data-rendermode], [data-collar], [data-headphonemode], [data-kblayout], [data-kborient], [data-tailmode], [data-fpscap], [data-lang]',
+      '[data-action], [data-breed], [data-rendermode], [data-collar], [data-headphonemode], [data-kblayout], [data-kborient], [data-pointer], [data-finish], [data-tailmode], [data-fpscap], [data-lang]',
     );
     if (!target) return;
 
@@ -534,6 +542,16 @@ async function bootstrap(): Promise<void> {
         return;
       }
 
+      const pointer = target.dataset.pointer;
+      if (pointer === 'mouse' || pointer === 'trackpad') {
+        void applySettingsPatch({ trackpadEnabled: pointer === 'trackpad' });
+        return;
+      }
+      const finish = target.dataset.finish;
+      if (finish === 'black' || finish === 'white') {
+        void applySettingsPatch({ whiteKeyboard: finish === 'white' });
+        return;
+      }
       const kbLayoutAttr = target.dataset.kblayout;
       if (isKeyboardLayoutId(kbLayoutAttr)) {
         void applySettingsPatch({ keyboardLayout: kbLayoutAttr });
@@ -721,6 +739,14 @@ async function bootstrap(): Promise<void> {
 
   if (!inTauri) return;
 
+  if (isMacPlatform()) {
+    await listen<boolean>('kuro-trackpad-unavailable', (ev) => {
+      padUnavailable = ev.payload;
+      syncUI();
+    });
+    padUnavailable = await invoke<boolean>('trackpad_unavailable').catch(() => false);
+    syncUI();
+  }
   await listen<AppSettings>('kuro-settings', (ev) => {
     settings = ev.payload;
     syncUI();

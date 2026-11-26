@@ -1,3 +1,5 @@
+import { macbookFinishes } from './macbookFinish';
+import { Trackpad, padPosition, type PadPoint } from './trackpad';
 import { paintMacBookLegend } from './macbookLegend';
 import {
   KEYBOARD_LAYOUTS,
@@ -245,6 +247,28 @@ export class KuroCatEngine {
   public onAfterRender: (() => void) | null = null;
   public catBreed: CatBreed = 'black';
   public customSkin: ResolvedSkin | null = null;
+  private whiteKeyboard = false;
+  private readonly pad = new Trackpad();
+
+  public setTrackpad(enabled: boolean): void {
+    this.pad.setEnabled(enabled);
+    this.wakeRendering();
+  }
+
+  public onTrackpad(points: readonly PadPoint[]): void {
+    if (!this.pad.enabled) return;
+    this.pad.points = points;
+    if (points.length) {
+      this.lastMouseMoveAt = performance.now();
+      this.leftPaw.mode = 'mouse';
+    }
+    this.wakeRendering();
+  }
+
+  private padOffset(point = this.pad.target) {
+    return padPosition(point, this.keyboardOrientation === 'cat', 45, 29);
+  }
+
   public keyboardLayout: KeyboardLayoutId = '65';
   public keyboardOrientation: KeyboardOrientation = 'cat';
   public tailKeyMode: TailKeyMode = 'smart';
@@ -621,7 +645,8 @@ export class KuroCatEngine {
     }
   }
 
-  public setKeyboardConfig(layout: KeyboardLayoutId, orientation: KeyboardOrientation): void {
+  public setKeyboardConfig(layout: KeyboardLayoutId, orientation: KeyboardOrientation, white = false): void {
+    this.whiteKeyboard = white && layout === 'macbook';
     const nextLayout: KeyboardLayoutId = normalizeKeyboardLayout(layout);
     const nextOrientation: KeyboardOrientation = orientation === 'viewer' ? 'viewer' : 'cat';
     const layoutChanged = this.keyboardLayout !== nextLayout;
@@ -655,6 +680,7 @@ export class KuroCatEngine {
     const ang = this.kbTiltRad + (isCatFacing ? Math.PI : 0);
     const c = Math.cos(ang);
     const s = Math.sin(ang);
+    const padPoint = this.padOffset();
     return {
       logicalW: this.logicalW,
       kbCenterX: this.kbCenterX,
@@ -662,8 +688,8 @@ export class KuroCatEngine {
       kbWidth: this.kbWidth,
       kbHeight: this.kbHeight,
       kbTiltRad: this.kbTiltRad,
-      mouseBtnX: mx + localBtnX * c - localBtnY * s,
-      mouseBtnY: my + localBtnX * s + localBtnY * c,
+      mouseBtnX: this.pad.enabled ? this.mouseBaseX + padPoint.x : mx + localBtnX * c - localBtnY * s,
+      mouseBtnY: this.pad.enabled ? this.mouseBaseY + padPoint.y : my + localBtnX * s + localBtnY * c,
       cursor: this.hasPointerPosition
         ? { x: this.cursorRelX * this.logicalW, y: this.cursorRelY * this.logicalH }
         : null,
@@ -1464,6 +1490,7 @@ export class KuroCatEngine {
   }
 
   private spawnMouseBadge(button: 'left' | 'right' | 'middle', now: number): void {
+    if (this.pad.enabled) return;
     if (!this.showKeyBubbles) return;
     const colors = this.getMouseButtonColors();
     const label = button === 'left' ? 'LMB' : button === 'right' ? 'RMB' : 'MMB';
@@ -1496,7 +1523,8 @@ export class KuroCatEngine {
     });
   }
 
-  public onMouseDown(button: string): void {
+  public onMouseDown(button: string, point?: PadPoint): void {
+    if (this.pad.enabled) this.pad.press(point);
     const now = performance.now();
     this.wakeCat(now, 'abrupt');
     this.squashSpring.kick(1.2);
@@ -2261,7 +2289,10 @@ export class KuroCatEngine {
       const isCatFacing = this.keyboardOrientation === 'cat';
       const lrBias = this.mouseLeftPress - this.mouseRightPress;
       const anyClickPress = Math.max(this.mouseLeftPress, this.mouseRightPress, this.mouseMiddlePress);
-      if (isCatFacing) {
+      if (this.pad.enabled) {
+        const p = this.padOffset();
+        paw.target = { x: this.mouseBaseX + p.x, y: this.mouseBaseY + p.y };
+      } else if (isCatFacing) {
         // 180° cat-facing: palm heel at TOP, LMB = inner/+X, RMB = outer/-X
         paw.target = {
           x: liveMouseX + 1.2 + lrBias * 6.4,
@@ -3550,6 +3581,26 @@ export class KuroCatEngine {
   }
 
   private drawMiniMouse(ctx: CanvasRenderingContext2D): void {
+    if (this.pad.enabled) {
+      const down = this.pad.pressed || this.mouseLeftDown || this.mouseRightDown;
+      ctx.save();
+      ctx.translate(this.mouseBaseX, this.mouseBaseY + this.deskHopY * 1.35);
+      ctx.fillStyle = '#91969c';
+      this.roundRect(ctx, -25, -17, 50, 35, 4);
+      ctx.fill();
+      ctx.fillStyle = down ? '#bbc0c5' : '#dbdddf';
+      this.roundRect(ctx, -24.3, down ? -15.8 : -16.8, 48.6, 32.5, 3.6);
+      ctx.fill();
+      ctx.fillStyle = '#1d7983';
+      for (const touch of this.pad.points) {
+        const p = this.padOffset(touch);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      return;
+    }
     const mx = this.mouseBaseX + this.mouseOffsetX;
     const my = this.mouseBaseY + this.mouseOffsetY + this.deskHopY * 1.35;
     const rx = 18.5;
@@ -3694,6 +3745,7 @@ export class KuroCatEngine {
     const layout = getKeyboardLayout(this.keyboardLayout);
     const isCatFacing = this.keyboardOrientation === 'cat';
     const mac = layout.id === 'macbook';
+    const finish = macbookFinishes[this.whiteKeyboard ? 'white' : 'black'];
     const is108 = this.keyboardLayout === '108';
     const padX = 7;
     const padY = 6;
@@ -3739,8 +3791,8 @@ export class KuroCatEngine {
       const y = -innerH / 2 + screenRowTop * rowH + gap * 0.5 + press * 2.0;
       const h = rSpan * rowH - gap - 0.8;
 
-      let topColor = mac ? '#27282c' : '#f8f8f5';
-      let sideColor = mac ? '#141519' : '#d0d2cc';
+      let topColor = mac ? finish.top : '#f8f8f5';
+      let sideColor = mac ? finish.side : '#d0d2cc';
       if (press > 0.14) {
         topColor = this.customSkin
           ? this.customSkin.accentColor
@@ -3769,7 +3821,7 @@ export class KuroCatEngine {
 
       // When overdrawing an animated key onto the cached base, paint the inner keybed strip behind it
       if (press > 0.01) {
-        targetCtx.fillStyle = mac ? '#35363b' : '#d4d6d1';
+        targetCtx.fillStyle = mac ? finish.plate : '#d4d6d1';
         targetCtx.fillRect(x - 0.4, -innerH / 2 + screenRowTop * rowH + gap * 0.5 - 0.4, w + 0.8, h + 3.8);
       }
 
@@ -3801,7 +3853,7 @@ export class KuroCatEngine {
         targetCtx.save();
         targetCtx.translate(x + w / 2, y + (h - 0.9) / 2);
         paintMacBookLegend(targetCtx, key, w, h - 0.9, isCatFacing,
-          press > 0.14 || isTailSelected ? '#111214' : '#f1f1f3');
+          press > 0.14 || isTailSelected ? '#111214' : finish.ink);
         targetCtx.restore();
         return;
       }
@@ -3850,7 +3902,7 @@ export class KuroCatEngine {
       const padMargin = 20;
       const cacheLogW = Math.ceil(botHalfW * 2 + padMargin * 2);
       const cacheLogH = Math.ceil(this.kbHeight + padMargin * 2);
-      const nextKey = `${this.keyboardLayout}|${this.keyboardOrientation}|${this.kbWidth}|${this.kbHeight}|${cacheScale}`;
+      const nextKey = `${this.keyboardLayout}|${this.whiteKeyboard}|${this.keyboardOrientation}|${this.kbWidth}|${this.kbHeight}|${cacheScale}`;
 
       if (!this.kbCacheCanvas || this.kbCacheKey !== nextKey) {
         if (!this.kbCacheCanvas) this.kbCacheCanvas = document.createElement('canvas');
@@ -3872,14 +3924,14 @@ export class KuroCatEngine {
           cg.fill();
           cg.restore();
 
-          cg.fillStyle = mac ? '#a5a8b0' : '#24262c';
+          cg.fillStyle = mac ? finish.shell : '#24262c';
           cg.strokeStyle = '#363840';
           cg.lineWidth = 1.1;
           this.trapezoidPath(cg, topHalfW, botHalfW, -halfH, halfH, 6.5);
           cg.fill();
           cg.stroke();
 
-          cg.fillStyle = mac ? '#35363b' : '#d4d6d1';
+          cg.fillStyle = mac ? finish.plate : '#d4d6d1';
           this.trapezoidPath(cg, topHalfW - 5, botHalfW - 5, -halfH + 4, halfH - 4, 3.5);
           cg.fill();
 
@@ -3912,14 +3964,14 @@ export class KuroCatEngine {
       ctx.fill();
       ctx.restore();
 
-      ctx.fillStyle = mac ? '#a5a8b0' : '#24262c';
+      ctx.fillStyle = mac ? finish.shell : '#24262c';
       ctx.strokeStyle = pickerAccentTop;
       ctx.lineWidth = 2.0;
       this.trapezoidPath(ctx, topHalfW, botHalfW, -halfH, halfH, 6.5);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = mac ? '#35363b' : '#d4d6d1';
+      ctx.fillStyle = mac ? finish.plate : '#d4d6d1';
       this.trapezoidPath(ctx, topHalfW - 5, botHalfW - 5, -halfH + 4, halfH - 4, 3.5);
       ctx.fill();
 
