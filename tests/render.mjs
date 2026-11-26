@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { KuroCatEngine } from '../src/catEngine';
 import { KuroCatEngine3D } from '../src/catEngine3d';
 import { getKeyboardLayout } from '../src/keyboardLayout';
@@ -9,6 +10,7 @@ const check = (condition, message) => { if (!condition) throw new Error(message)
 try {
   const engine = is3d ? new KuroCatEngine3D(canvas, {embedded: true}) : new KuroCatEngine(canvas, {embedded: true});
   engine.resize();
+  engine.showKeyBubbles = false;
   engine.setTailKeyConfig('off', []);
   const screenshots = {};
   for (const id of ['65', '108', 'macbook']) {
@@ -40,6 +42,20 @@ try {
       engine.onKeyUp(code);
       check(is3d ? !engine.desk.resolveKey(code).down : !engine.keyAnims.get(pressed).pressed, 'keyup');
     }
+  }
+  if (is3d) {
+    // Photograph the production board from above, retaining the installed key geometry and atlas.
+    const board = engine.desk.boardGroup;
+    const center = board.getWorldPosition(new THREE.Vector3());
+    const cam = new THREE.OrthographicCamera(-1.31, 1.31, 0.55, -0.55, 0.1, 8);
+    cam.up.set(0, 0, -1);
+    cam.position.copy(center).add(new THREE.Vector3(0, 2.6, 0));
+    cam.lookAt(center);
+    const scene = new THREE.Scene();
+    scene.attach(board);
+    engine.renderer.setSize(1440, 605, false);
+    engine.renderer.render(scene, cam);
+    screenshots.detail = canvas.toDataURL('image/png').split(',')[1];
   }
   engine.stop();
   result.textContent = JSON.stringify({screenshots});

@@ -884,7 +884,7 @@ pub(crate) fn should_auto_reset_stale_macos_tcc(
 
 #[cfg(target_os = "macos")]
 pub mod macos_hook {
-    use crate::mac_keycodes::{macos_keycode_to_vk, modifier_down};
+    use crate::mac_keycodes::{keyboard_action_vk, macos_keycode_to_vk, modifier_down};
     use super::{
         hid_usage_to_vk, parse_macos_adhoc_cdhash, should_auto_reset_stale_macos_tcc, KeySource,
         RawHookMsg, HOOK_TX, KEY_EVENTS_RECEIVED,
@@ -1528,16 +1528,14 @@ pub mod macos_hook {
             if elem.is_null() {
                 return;
             }
-            if IOHIDElementGetUsagePage(elem) != K_HID_PAGE_KEYBOARD_OR_KEYPAD {
-                return;
-            }
+            let page = IOHIDElementGetUsagePage(elem);
             let usage = IOHIDElementGetUsage(elem);
-            if !(0x04..=0xE7).contains(&usage) {
-                return;
-            }
-            let Some(vk) = hid_usage_to_vk(usage) else {
-                return;
+            let mapped = if page == K_HID_PAGE_KEYBOARD_OR_KEYPAD {
+                hid_usage_to_vk(usage)
+            } else {
+                keyboard_action_vk(page, usage)
             };
+            let Some(vk) = mapped else { return };
             let pressed = IOHIDValueGetIntegerValue(value) != 0;
             if let Some(tx) = HOOK_TX.get() {
                 if pressed {

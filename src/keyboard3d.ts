@@ -318,7 +318,7 @@ function getKeycapAtlas(
   const nonOrange = unique.filter((u) => u.accent !== 'orange');
   const orangeOnly = unique.filter((u) => u.accent === 'orange');
 
-  const CELL = 96;
+  const CELL = layoutId === 'macbook' ? 128 : 96;
   const cols = nonOrange.length <= 56 ? 8 : 12;
   const nonOrangeRows = Math.ceil(nonOrange.length / cols);
   const totalRows = Math.max(1, nonOrangeRows + (orangeOnly.length > 0 ? 1 : 0));
@@ -400,8 +400,9 @@ function getKeycapAtlas(
   }
 
   const tex = new THREE.CanvasTexture(c);
-  tex.generateMipmaps = false;
-  tex.minFilter = THREE.LinearFilter;
+  tex.generateMipmaps = layoutId === 'macbook';
+  tex.minFilter = tex.generateMipmaps ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+  if (tex.generateMipmaps) tex.anisotropy = 4;
   tex.magFilter = THREE.LinearFilter;
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
@@ -895,6 +896,15 @@ export class KeyboardAndMouse3D {
       { geo: bezelGeo, color: mac ? '#b2b5bd' : '#2c2f38' },
       { geo: plateGeo, color: mac ? '#35363b' : '#181a20' },
     ]);
+    if (mac) {
+      // Bake a broad anodized-aluminum highlight into the shared chassis vertex colors.
+      const position = chassisGeo.attributes.position;
+      const color = chassisGeo.attributes.color;
+      for (let i = 0; i < color.count; i++) {
+        const light = 0.94 + 0.20 * position.getX(i) / W - 0.15 * position.getZ(i) / D;
+        color.setXYZ(i, color.getX(i) * light, color.getY(i) * light, color.getZ(i) * light);
+      }
+    }
     baseGeo.dispose();
     bezelGeo.dispose();
     plateGeo.dispose();

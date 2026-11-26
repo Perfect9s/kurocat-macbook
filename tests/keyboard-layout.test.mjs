@@ -37,6 +37,8 @@ test('native transport IDs resolve independently of keycap text', () => {
     assert.equal(resolveKeyByVk(code, 'macbook').id, id);
   }
   for (let i = 0; i < 12; i++) assert.equal(resolveKeyByVk(0x70 + i, 'macbook').id, 'f' + (i+1));
+  const actions = [0x140,0x141,0x142,0x143,0x144,0x145,0xb1,0xb3,0xb0,0xad,0xae,0xaf];
+  actions.forEach((vk, i) => assert.equal(resolveKeyByVk(vk, 'macbook').id, 'f' + (i + 1)));
   assert.deepEqual(layout.keys.find(k => k.id === 'touchid').vkCodes, []);
   assert.equal(resolveKeyByVk(0xff, 'macbook'), null);
   assert.deepEqual(rect(layout.keys.find(k => k.id === 'down')), [13, 5.5, 1, 0.5]);

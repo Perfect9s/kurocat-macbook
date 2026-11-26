@@ -117,6 +117,26 @@ pub(crate) fn macos_keycode_to_vk(kc: u16) -> Option<u32> {
     Some(vk)
 }
 
+/// Auxiliary usages reported by a keyboard already matched by IOHIDManager.
+/// Preserve media VKs; keep Apple system actions outside the standard VK range.
+pub(crate) fn keyboard_action_vk(page: u32, usage: u32) -> Option<u32> {
+    Some(match (page, usage) {
+        (0x0c, 0x70) => 0x140, // display brightness down
+        (0x0c, 0x6f) => 0x141, // display brightness up
+        (0x0c, 0x29f) => 0x142, // show all windows
+        (0x0c, 0x221) => 0x143, // search
+        (0x0c, 0xcf) => 0x144, // voice command
+        (0x01, 0x9b) => 0x145, // do not disturb
+        (0x0c, 0xb6) => 0xb1, // previous track
+        (0x0c, 0xcd) => 0xb3, // play/pause
+        (0x0c, 0xb5) => 0xb0, // next track
+        (0x0c, 0xe2) => 0xad, // mute
+        (0x0c, 0xea) => 0xae, // volume down
+        (0x0c, 0xe9) => 0xaf, // volume up
+        _ => return None,
+    })
+}
+
 /// IOKit IOLLEvent.h device-dependent masks distinguish releases during two-sided chords.
 /// Some input sources supply only the combined mask. Use it when neither side bit is present.
 pub(crate) fn modifier_down(kc: u16, flags: u64) -> Option<bool> {
@@ -148,6 +168,14 @@ mod tests {
             assert_eq!(modifier_down(left, combined), Some(true));
             assert_eq!(modifier_down(right, 0), Some(false));
         }
+    }
+
+    #[test]
+    fn consumer_actions_are_page_specific() {
+        assert_eq!(keyboard_action_vk(0x0c, 0x70), Some(0x140));
+        assert_eq!(keyboard_action_vk(0x0c, 0xcd), Some(0xb3));
+        assert_eq!(keyboard_action_vk(0x07, 0x70), None);
+        assert_eq!(keyboard_action_vk(0x08, 0x08), None); // LED status
     }
 
     #[test]

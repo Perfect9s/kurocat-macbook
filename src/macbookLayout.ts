@@ -7,10 +7,12 @@ type Cap = [id: string, legend: string, vk: number | number[], width?: number];
 const letters = (row: string): Cap[] =>
   [...row].map(letter => [letter.toLowerCase(), letter, letter.charCodeAt(0)]);
 
+const modifierBubbles: Record<string, string> = { command: '⌘', option: '⌥', control: '⌃', 'caps lock': '⇪' };
+
 function row(index: number, caps: Cap[]): KeySpec[] {
   let start = 0;
   return caps.map(([id, label, vk, uWidth = 1]) => {
-    const key = { id, label, bubble: label || 'Space', row: index, uStart: start,
+    const key = { id, label, bubble: modifierBubbles[label] ?? (label || 'Space'), row: index, uStart: start,
       uWidth, vkCodes: Array.isArray(vk) ? vk : [vk] };
     start += uWidth;
     return key;
@@ -21,7 +23,7 @@ const functionKeys: Cap[] = Array.from({ length: 12 }, (_, index) => {
   // Consumer media VKs are aliases only when the input source actually delivers one.
   const media = [0xb1, 0xb3, 0xb0, 0xad, 0xae, 0xaf];
   const codes = [0x70 + index];
-  if (index >= 6) codes.push(media[index - 6]);
+  codes.push(index < 6 ? 0x140 + index : media[index - 6]);
   return [`f${index + 1}`, `F${index + 1}`, codes, 13.5 / 13];
 });
 
