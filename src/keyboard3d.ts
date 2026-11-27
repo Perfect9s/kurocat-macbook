@@ -936,12 +936,12 @@ export class KeyboardAndMouse3D {
     const mac = layoutId === 'macbook';
     const isCatFacing = orientation === 'cat';
 
-    // Sync mouse orientation (180° cat-facing vs 0° viewer-facing)
     this.padGroup.quaternion.copy(this.boardGroup.quaternion);
     if (isCatFacing) this.padGroup.rotateY(Math.PI);
-    this.mouseShape.rotation.y = isCatFacing ? -0.10 : Math.PI - 0.10;
-    this.mouseLabelLMat.map = makeMouseLabelTexture('L', isCatFacing);
-    this.mouseLabelRMat.map = makeMouseLabelTexture('R', isCatFacing);
+    // Keep mouse cat-facing in both keyboard orientations (#92) so the paw rests on the palm heel without covering RMB
+    this.mouseShape.rotation.y = -0.10;
+    this.mouseLabelLMat.map = makeMouseLabelTexture('L', true);
+    this.mouseLabelRMat.map = makeMouseLabelTexture('R', true);
     this.mouseLabelLMat.needsUpdate = true;
     this.mouseLabelRMat.needsUpdate = true;
 
