@@ -2,6 +2,8 @@ import type { TailKeyMode } from '../../src/catEngine';
 
 export type Locale = 'zh' | 'en' | 'ja' | 'ko' | 'es' | 'pt' | 'ru' | 'de';
 
+export type VisitorOS = 'android' | 'ios' | 'macos' | 'win7' | 'win' | 'linux-arm64' | 'linux-x64';
+
 export const LOCALE_SHORT_LABELS: Record<Locale, string> = {
   zh: '中文',
   en: 'EN',
@@ -96,7 +98,12 @@ export interface KuroCatI18nBundle {
   fmt: {
     latestVersion: (tag: string) => string;
     heroDownloadWin: (size: string) => string;
+    heroDownloadWin7: (size: string) => string;
     heroDownloadMac: (size: string) => string;
+    heroDownloadLinux: (size: string, arch: 'x64' | 'arm64') => string;
+    heroDownloadAndroid: (size: string) => string;
+    heroDownloadIos: () => string;
+    heroOsHint: (os: VisitorOS, size: string) => string;
     layout: (id: '65' | '108') => string;
     orient: (o: 'cat' | 'viewer') => string;
     tailPickerBtn: (open: boolean, count: number) => string;
@@ -130,14 +137,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': '立即下载',
       'nav.features': '核心特性',
       'nav.mcp': 'AI 捏猫',
-      'hero.eyebrow': 'Windows · macOS · Linux · Open Source',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Open Source',
       'hero.allPlatforms': '全部平台与版本',
       'hero.ghSource': 'GitHub 源码 ›',
       'hero.spec1Lbl': '原生 Rust 安装包体积',
       'hero.spec2Val': '7 款 + MCP',
       'hero.spec2Lbl': '猫咪 & 鲸鱼娘 · AI 定制',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': '支持 Apple Silicon · Win7 · 麒麟',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · 麒麟 · Android 8+',
       'pg.title': '实时网页引擎 · 直接敲键盘或摸猫头',
       'pg.mode3d': '✨ 3D 立体',
       'pg.mode2d': '🎨 2D 经典',
@@ -186,6 +193,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'GitHub 官方源 ›',
       'dl.macName': 'macOS 通用版（M 芯片 & Intel）',
       'dl.macSub': 'macOS 10.15+ (Catalina 及以上) Universal DMG',
+      'dl.recommendedTag': '为你的设备推荐',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'Android 手机 / 平板悬浮版',
+      'dl.androidSub': 'Android 8.0+ 官方签名 APK',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ Windows 浏览器提示「通常不会下载 .exe / 保护你的电脑」怎么办？',
       'dl.tipBrewTitle': '🍺 macOS Homebrew 一键安装（推荐 · 自动免隔离）',
       'dl.tipMacTitle': '🍎 macOS 首次打开说明（仅需一次 · 无需开着终端）',
@@ -271,6 +284,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         '开箱即 65% 紧凑机械键盘，自动创建桌面 <code>KuroCat</code> 图标、开始菜单与系统卸载入口；右键随时可一键切换 <strong>108 键全尺寸小键盘</strong>、<strong>自定义尾巴按键</strong> 与内置自更新。',
       'dl.macDesc':
         '原生编译 ARM64 + x86_64 通用镜像，兼容 M1/M2/M3/M4 与老款 Intel Mac（macOS 10.15 Catalina 及以上），内置 65% / 108 键、6 款猫咪与大肥鱼皮肤。打开 <code>.dmg</code> 拖入「应用程序」即可运行。',
+            'dl.androidDesc':
+        '原生悬浮置顶桌宠，同步 <strong>6 款猫咪 + 大肥鱼</strong>、<strong>20%–100% 不透明度</strong>、真猫呼噜与打字键鼠音效，支持摸头/点鼻/挠下巴/揪尾巴/拎后颈摇晃、横竖屏自适应与支付键盘自动闭眼防偷窥。',
       'dl.tipWinBody':
         '由于本项目为免费开源软件、未购买商业 EV 代码签名证书，Edge 浏览器在下载新版本 <code>.exe</code> 时可能会弹出「通常不会下载」提示（全部源码已在 GitHub 公开，可放心使用）：<br /><strong>① Edge 浏览器保留步骤</strong>：鼠标移到下载记录上 → 点右侧<strong>三个点 <code>···</code></strong> → 点<strong>「保留」</strong> → 弹窗显示「删除」按钮时，点击旁边的<strong>下箭头 <code>▾</code>（显示更多）</strong> → 选择<strong>「仍然保留」</strong>即可下载完成（Chrome 请按 <code>Ctrl + J</code> 打开下载页 → 点「保留危险文件」→「仍然保留」）。<br /><strong>② 双击安装若弹出蓝框「Windows 已保护你的电脑」</strong>：点击<strong>「更多信息」</strong> → 点击<strong>「仍要运行」</strong>即可完成安装。',
       'dl.tipBrewBody':
@@ -384,6 +399,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `最新版本 ${tag}`,
       heroDownloadWin: (size) => `免费下载 Windows 版（${size}）`,
       heroDownloadMac: (size) => `免费下载 macOS 通用版（${size}）`,
+      heroDownloadWin7: (size) => `免费下载 Win7 绿包版（${size}）`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `免费下载 Linux ARM64 版（${size}）` : `免费下载 Linux 版（${size}）`,
+      heroDownloadAndroid: (size) => `免费下载 Android 版（${size}）`,
+      heroDownloadIos: () => '查看电脑与 Android 安装包',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `已识别当前设备：<strong>Android 手机 / 平板</strong> · 一键直下官方签名 APK（${size}）`;
+        if (os === 'macos') return `已识别当前系统：<strong>macOS (Apple Silicon &amp; Intel)</strong> · 同样提供 Win / Linux / Android 版`;
+        if (os === 'win7') return `已识别当前系统：<strong>Windows 7</strong> · 已自动推荐内置 WebView2 109 离线兼容绿包`;
+        if (os === 'linux-arm64') return `已识别当前系统：<strong>Linux ARM64</strong> · 默认推荐轻量 .deb，下方另附 AppImage`;
+        if (os === 'linux-x64') return `已识别当前系统：<strong>Linux x86_64</strong> · 默认推荐轻量 .deb，下方另附 AppImage`;
+        if (os === 'ios') return '已识别当前设备：<strong>iOS / iPadOS</strong> · 暂仅支持电脑端与 Android，请在电脑或安卓手机下载';
+        return '已识别当前系统：<strong>Windows 10 / 11 (x64)</strong> · 同样提供 macOS / Linux / Android 版';
+      },
       layout: (id) => (id === '108' ? '108 全尺寸' : '65% 紧凑'),
       orient: (o) => (o === 'viewer' ? '面向观众' : '面向猫咪'),
       tailPickerBtn: (open, count) =>
@@ -420,14 +449,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': 'Download',
       'nav.features': 'Features',
       'nav.mcp': 'AI MCP',
-      'hero.eyebrow': 'Windows · macOS · Linux · Open Source',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Open Source',
       'hero.allPlatforms': 'All Platforms',
       'hero.ghSource': 'GitHub Source ›',
       'hero.spec1Lbl': 'Native Rust Installer Size',
       'hero.spec2Val': '7 Skins + MCP',
       'hero.spec2Lbl': 'Cats & Whale-Girl · AI Studio',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': 'Apple Silicon · Win7 · KylinOS',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · Android 8+',
       'pg.title': 'Live Web Engine · Type or Pet the Cat',
       'pg.mode3d': '✨ 3D Mode',
       'pg.mode2d': '🎨 2D Classic',
@@ -476,6 +505,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'GitHub Official Mirror ›',
       'dl.macName': 'macOS Universal (Apple Silicon & Intel)',
       'dl.macSub': 'macOS 10.15+ (Catalina or later) Universal DMG',
+      'dl.recommendedTag': 'Recommended for You',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'Android Floating Pet (APK)',
+      'dl.androidSub': 'Android 8.0+ · Signed Official APK',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ Browser says "isn\'t commonly downloaded" or Windows SmartScreen pops up?',
       'dl.tipBrewTitle': '🍺 Install on macOS via Homebrew (Recommended)',
       'dl.tipMacTitle': '🍎 macOS First-Launch Guide (One-Time Setup)',
@@ -561,6 +596,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         'Starts with the 65% compact layout and adds Desktop, Start Menu & Uninstaller shortcuts. Right-click anytime for <strong>108-key full-size</strong>, <strong>custom tail keys</strong>, OBS source & one-click updates.',
       'dl.macDesc':
         'Native ARM64 + x86_64 Universal DMG supporting Apple Silicon M1–M4 and Intel Macs (macOS 10.15 Catalina+). Includes 65%/108-key layouts, all 6 cats & BigFish. Open <code>.dmg</code> and drag to Applications.',
+            'dl.androidDesc':
+        'Always-on-top Android floating companion with <strong>6 cats + BigFish</strong>, <strong>20%–100% opacity</strong>, real cat purring &amp; typing audio, head-pat / chin-scratch / scruff-lift interactions, auto rotation, and payment-keyboard privacy guard.',
       'dl.tipWinBody':
         'Because KuroCat is free open-source software without a commercial EV code-signing certificate, Edge/Chrome may show a download warning (100% source code is public on GitHub):<br /><strong>① Edge</strong>: Hover the download → click <strong><code>···</code></strong> → <strong>Keep</strong> → click the down arrow <strong><code>▾</code> (Show more)</strong> → <strong>Keep anyway</strong> (Chrome: press <code>Ctrl + J</code> → Keep dangerous file → Keep anyway).<br /><strong>② Windows SmartScreen</strong>: Click <strong>More info</strong> → <strong>Run anyway</strong>.',
       'dl.tipBrewBody':
@@ -674,6 +711,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `Latest ${tag}`,
       heroDownloadWin: (size) => `Download for Windows (${size})`,
       heroDownloadMac: (size) => `Download for macOS (${size})`,
+      heroDownloadWin7: (size) => `Download for Windows 7 (${size})`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `Download for Linux ARM64 (${size})` : `Download for Linux (${size})`,
+      heroDownloadAndroid: (size) => `Download Android APK (${size})`,
+      heroDownloadIos: () => 'Browse Desktop & Android Builds',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `Detected your device: <strong>Android</strong> · Tap to download the signed APK (${size})`;
+        if (os === 'macos') return 'Detected your OS: <strong>macOS (Apple Silicon &amp; Intel)</strong> · Also available for Win / Linux / Android';
+        if (os === 'win7') return 'Detected your OS: <strong>Windows 7</strong> · Auto-selected offline WebView2 109 portable build';
+        if (os === 'linux-arm64') return 'Detected your OS: <strong>Linux ARM64</strong> · Recommended lightweight .deb (AppImage below)';
+        if (os === 'linux-x64') return 'Detected your OS: <strong>Linux x86_64</strong> · Recommended lightweight .deb (AppImage below)';
+        if (os === 'ios') return 'Detected your device: <strong>iOS / iPadOS</strong> · Available for Windows, macOS, Linux &amp; Android below';
+        return 'Detected your OS: <strong>Windows 10 / 11 (x64)</strong> · Also available for macOS / Linux / Android';
+      },
       layout: (id) => (id === '108' ? '108 Full-Size' : '65% Compact'),
       orient: (o) => (o === 'viewer' ? 'Viewer View' : 'Cat View'),
       tailPickerBtn: (open, count) =>
@@ -710,14 +761,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': 'ダウンロード',
       'nav.features': '主な機能',
       'nav.mcp': 'AI カスタム',
-      'hero.eyebrow': 'Windows · macOS · Linux · Open Source',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Open Source',
       'hero.allPlatforms': '全プラットフォーム',
       'hero.ghSource': 'GitHub ソース ›',
       'hero.spec1Lbl': 'Rust ネイティブ導入サイズ',
       'hero.spec2Val': '7 種 + MCP',
       'hero.spec2Lbl': '猫 & クジラ娘 · AI 制作',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': 'Apple Silicon · Win7 · KylinOS',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · Android 8+',
       'pg.title': 'リアルタイム体験版 · 打鍵やなでなでに対応',
       'pg.mode3d': '✨ 3D モード',
       'pg.mode2d': '🎨 2D クラシック',
@@ -766,6 +817,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'GitHub 公式ミラー ›',
       'dl.macName': 'macOS ユニバーサル版（M チップ & Intel）',
       'dl.macSub': 'macOS 10.15+ (Catalina 以降) Universal DMG',
+      'dl.recommendedTag': 'この端末におすすめ',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'Android オーバーレイ版 (APK)',
+      'dl.androidSub': 'Android 8.0+ 公式署名済み APK',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ ブラウザのダウンロード警告や SmartScreen が表示されたら？',
       'dl.tipBrewTitle': '🍺 macOS Homebrew ワンラインインストール（推奨・自動検疫解除）',
       'dl.tipMacTitle': '🍎 macOS 初回起動ガイド（初回のみ・常時ターミナル不要）',
@@ -851,6 +908,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         '初期配列は 65% コンパクト。デスクトップアイコンやアンインストーラーを自動作成し、右クリックから <strong>108 フルサイズ</strong>・<strong>しっぽキー指定</strong>・OBS 透過ソース・自動更新へいつでも切替できます。',
       'dl.macDesc':
         'Apple Silicon (M1–M4) と Intel Mac（macOS 10.15 Catalina 以降）両対応の Universal DMG。65%/108 キーと全 7 スキンを内蔵。<code>.dmg</code> を開いて「アプリケーション」へドラッグするだけです。',
+            'dl.androidDesc':
+        'スマホ・タブレット対応の常駐デスクトップペット。<strong>猫 6 種 + クジラ娘</strong>、<strong>20%–100% 不透明度</strong>、本物のゴロゴロ音＆打鍵音、なでなで・首根っこ持ち上げ、縦横画面切替、決済キーボード自動目隠しに対応。',
       'dl.tipWinBody':
         '無料オープンソースで商用コード署名がないため、ダウンロード時に警告が表示される場合があります（全ソースコードは GitHub で公開済み）：<br /><strong>① Edge</strong>：履歴にカーソルを合わせ <strong><code>···</code></strong> → <strong>保存</strong> → <strong><code>▾</code>（詳細表示）</strong> → <strong>保持する</strong>（Chrome は <code>Ctrl + J</code> → 危険なファイルを保存 → 保持）。<br /><strong>② SmartScreen の青い画面</strong>：<strong>詳細情報</strong> → <strong>実行</strong> をクリックしてください。',
       'dl.tipBrewBody':
@@ -964,6 +1023,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `最新版 ${tag}`,
       heroDownloadWin: (size) => `Windows 版を無料ダウンロード（${size}）`,
       heroDownloadMac: (size) => `macOS 版を無料ダウンロード（${size}）`,
+      heroDownloadWin7: (size) => `Windows 7 版を無料ダウンロード（${size}）`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `Linux ARM64 版を無料ダウンロード（${size}）` : `Linux 版を無料ダウンロード（${size}）`,
+      heroDownloadAndroid: (size) => `Android APK を無料ダウンロード（${size}）`,
+      heroDownloadIos: () => 'PC / Android 版のダウンロードを見る',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `端末を自動検出：<strong>Android</strong> · 公式署名 APK（${size}）をすぐダウンロード`;
+        if (os === 'macos') return 'OS を自動検出：<strong>macOS (Apple Silicon &amp; Intel)</strong> · Win / Linux / Android 版もあり';
+        if (os === 'win7') return 'OS を自動検出：<strong>Windows 7</strong> · WebView2 109 同梱ポータブル版をおすすめ';
+        if (os === 'linux-arm64') return 'OS を自動検出：<strong>Linux ARM64</strong> · 軽量 .deb を推奨（AppImage は下部に掲載）';
+        if (os === 'linux-x64') return 'OS を自動検出：<strong>Linux x86_64</strong> · 軽量 .deb を推奨（AppImage は下部に掲載）';
+        if (os === 'ios') return '端末を自動検出：<strong>iOS / iPadOS</strong> · 現在は PC（Win/Mac/Linux）と Android 向けを提供中';
+        return 'OS を自動検出：<strong>Windows 10 / 11 (x64)</strong> · macOS / Linux / Android 版もあり';
+      },
       layout: (id) => (id === '108' ? '108 フルサイズ' : '65% コンパクト'),
       orient: (o) => (o === 'viewer' ? '視聴者目線' : '猫目線'),
       tailPickerBtn: (open, count) =>
@@ -1000,14 +1073,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': '다운로드',
       'nav.features': '핵심 기능',
       'nav.mcp': 'AI 커스텀',
-      'hero.eyebrow': 'Windows · macOS · Linux · Open Source',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Open Source',
       'hero.allPlatforms': '전체 플랫폼',
       'hero.ghSource': 'GitHub 소스 ›',
       'hero.spec1Lbl': '네이티브 Rust 설치 용량',
       'hero.spec2Val': '7종 + MCP',
       'hero.spec2Lbl': '고양이 & 고래소녀 · AI 제작',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': 'Apple Silicon · Win7 · KylinOS',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · Android 8+',
       'pg.title': '실시간 체험 · 타이핑 & 쓰다듬기',
       'pg.mode3d': '✨ 3D 모드',
       'pg.mode2d': '🎨 2D 클래식',
@@ -1056,6 +1129,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'GitHub 공식 미러 ›',
       'dl.macName': 'macOS 유니버설 (Apple Silicon & Intel)',
       'dl.macSub': 'macOS 10.15+ (Catalina 이상) Universal DMG',
+      'dl.recommendedTag': '내 기기 추천',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'Android 플로팅 펫 (APK)',
+      'dl.androidSub': 'Android 8.0+ 공식 서명 APK',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ 브라우저에서 "일반적으로 다운로드되지 않음" 또는 Windows SmartScreen 경고가 뜨나요?',
       'dl.tipBrewTitle': '🍺 macOS Homebrew 한 줄 설치 (추천 · 격리 자동 해제)',
       'dl.tipMacTitle': '🍎 macOS 첫 실행 안내 (최초 1회 · 터미널 상시 실행 불필요)',
@@ -1141,6 +1220,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         '기본 65% 콤팩트 배열로 시작하며 바탕화면·시작 메뉴·제거 항목을 자동 생성합니다. 우클릭 메뉴에서 <strong>108 풀배열</strong>, <strong>커스텀 꼬리 키</strong>, OBS 투명 소스, 원클릭 업데이트를 언제든 사용할 수 있습니다.',
       'dl.macDesc':
         'Apple Silicon(M1–M4)과 Intel Mac(macOS 10.15 Catalina 이상)을 모두 지원하는 네이티브 Universal DMG. 65%/108키와 고양이 6종 및 고래소녀 스킨이 모두 포함됩니다. <code>.dmg</code>를 열어 「응용 프로그램」에 드래그하세요.',
+            'dl.androidDesc':
+        '스마트폰·태블릿용 플로팅 데스크톱 펫. <strong>고양이 6종 + 고래소녀</strong>, <strong>20%–100% 투명도 조절</strong>, 실제 고양이 골골송과 타건음, 쓰다듬기·목덜미 들어올리기, 가로/세로 자동 대응, 보안 키보드 자동 눈 가리기를 지원합니다.',
       'dl.tipWinBody':
         '상용 EV 코드 서명 인증서가 없는 무료 오픈소스 소프트웨어이므로 다운로드 시 브라우저 경고가 표시될 수 있습니다(전체 소스는 GitHub에 100% 공개됨):<br /><strong>① Edge</strong>: 다운로드 항목에 마우스 올리기 → <strong><code>···</code></strong> → <strong>유지</strong> → 삭제 옆 <strong><code>▾</code> (더 보기)</strong> → <strong>그래도 유지</strong> (Chrome: <code>Ctrl + J</code> → 위험한 파일 유지 → 계속 유지).<br /><strong>② Windows SmartScreen 파란 창</strong>: <strong>추가 정보</strong> → <strong>실행</strong>을 클릭하세요.',
       'dl.tipBrewBody':
@@ -1254,6 +1335,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `최신 버전 ${tag}`,
       heroDownloadWin: (size) => `Windows용 무료 다운로드 (${size})`,
       heroDownloadMac: (size) => `macOS용 무료 다운로드 (${size})`,
+      heroDownloadWin7: (size) => `Windows 7용 무료 다운로드 (${size})`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `Linux ARM64용 무료 다운로드 (${size})` : `Linux용 무료 다운로드 (${size})`,
+      heroDownloadAndroid: (size) => `Android APK 무료 다운로드 (${size})`,
+      heroDownloadIos: () => 'PC / Android 다운로드 보기',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `기기 자동 감지: <strong>Android</strong> · 공식 서명 APK(${size}) 바로 다운로드`;
+        if (os === 'macos') return 'OS 자동 감지: <strong>macOS (Apple Silicon &amp; Intel)</strong> · Win / Linux / Android 버전도 제공';
+        if (os === 'win7') return 'OS 자동 감지: <strong>Windows 7</strong> · WebView2 109 내장 포터블 버전 자동 추천';
+        if (os === 'linux-arm64') return 'OS 자동 감지: <strong>Linux ARM64</strong> · 경량 .deb 권장 (아래 AppImage 포함)';
+        if (os === 'linux-x64') return 'OS 자동 감지: <strong>Linux x86_64</strong> · 경량 .deb 권장 (아래 AppImage 포함)';
+        if (os === 'ios') return '기기 자동 감지: <strong>iOS / iPadOS</strong> · 현재 PC(Win/Mac/Linux)와 Android 버전을 제공합니다';
+        return 'OS 자동 감지: <strong>Windows 10 / 11 (x64)</strong> · macOS / Linux / Android 버전도 제공';
+      },
       layout: (id) => (id === '108' ? '108 풀배열' : '65% 콤팩트'),
       orient: (o) => (o === 'viewer' ? '시청자 시점' : '고양이 시점'),
       tailPickerBtn: (open, count) =>
@@ -1290,14 +1385,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': 'Descargar',
       'nav.features': 'Funciones',
       'nav.mcp': 'IA MCP',
-      'hero.eyebrow': 'Windows · macOS · Linux · Código Abierto',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Código Abierto',
       'hero.allPlatforms': 'Todas las plataformas',
       'hero.ghSource': 'Código en GitHub ›',
       'hero.spec1Lbl': 'Instalador nativo en Rust',
       'hero.spec2Val': '7 skins + MCP',
       'hero.spec2Lbl': 'Gatos y Chica Ballena · Estudio IA',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': 'Apple Silicon · Win7 · KylinOS',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · Android 8+',
       'pg.title': 'Motor web en vivo · Teclea o acaricia al gato',
       'pg.mode3d': '✨ Modo 3D',
       'pg.mode2d': '🎨 2D Clásico',
@@ -1346,6 +1441,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'Espejo oficial de GitHub ›',
       'dl.macName': 'macOS Universal (Apple Silicon e Intel)',
       'dl.macSub': 'macOS 10.15+ (Catalina o superior) Universal DMG',
+      'dl.recommendedTag': 'Recomendado para ti',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'App flotante para Android (APK)',
+      'dl.androidSub': 'Android 8.0+ · APK oficial firmado',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ ¿El navegador dice «no se descarga habitualmente» o salta Windows SmartScreen?',
       'dl.tipBrewTitle': '🍺 Instalar en macOS con Homebrew (Recomendado)',
       'dl.tipMacTitle': '🍎 Guía de primer inicio en macOS (solo una vez)',
@@ -1431,6 +1532,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         'Inicia con teclado compacto 65% y crea accesos directos en Escritorio, Menú Inicio y desinstalador. Haz clic derecho cuando quieras para <strong>108 teclas completo</strong>, <strong>teclas de cola personalizadas</strong>, fuente OBS y actualización en un clic.',
       'dl.macDesc':
         'DMG Universal nativo ARM64 + x86_64 compatible con Apple Silicon M1–M4 y Mac Intel (macOS 10.15 Catalina o superior). Incluye distribuciones 65%/108 teclas, los 6 gatos y BigFish. Abre el <code>.dmg</code> y arrástralo a Aplicaciones.',
+            'dl.androidDesc':
+        'Mascota flotante para móvil y tablet con <strong>6 gatos + BigFish</strong>, <strong>opacidad 20%–100%</strong>, ronroneo real y sonido al teclear, gestos de acariciar o levantar del cuello, giro automático y privacidad ante teclados de pago.',
       'dl.tipWinBody':
         'Como KuroCat es software gratuito de código abierto sin certificado comercial EV de firma de código, Edge/Chrome puede mostrar un aviso al descargar (el 100% del código fuente es público en GitHub):<br /><strong>① Edge</strong>: Pasa el cursor sobre la descarga → haz clic en <strong><code>···</code></strong> → <strong>Conservar</strong> → flecha hacia abajo <strong><code>▾</code> (Mostrar más)</strong> → <strong>Conservar de todos modos</strong> (Chrome: pulsa <code>Ctrl + J</code> → Conservar archivo peligroso → Mantener de todos modos).<br /><strong>② Windows SmartScreen</strong>: Haz clic en <strong>Más información</strong> → <strong>Ejecutar de todas formas</strong>.',
       'dl.tipBrewBody':
@@ -1544,6 +1647,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `Última versión ${tag}`,
       heroDownloadWin: (size) => `Descargar para Windows (${size})`,
       heroDownloadMac: (size) => `Descargar para macOS (${size})`,
+      heroDownloadWin7: (size) => `Descargar para Windows 7 (${size})`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `Descargar Linux ARM64 (${size})` : `Descargar para Linux (${size})`,
+      heroDownloadAndroid: (size) => `Descargar APK Android (${size})`,
+      heroDownloadIos: () => 'Ver descargas de PC y Android',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `Dispositivo detectado: <strong>Android</strong> · Toca para descargar el APK oficial (${size})`;
+        if (os === 'macos') return 'Sistema detectado: <strong>macOS (Apple Silicon e Intel)</strong> · También para Win / Linux / Android';
+        if (os === 'win7') return 'Sistema detectado: <strong>Windows 7</strong> · Recomendada la versión portátil con WebView2 109';
+        if (os === 'linux-arm64') return 'Sistema detectado: <strong>Linux ARM64</strong> · Paquete .deb ligero recomendado (AppImage abajo)';
+        if (os === 'linux-x64') return 'Sistema detectado: <strong>Linux x86_64</strong> · Paquete .deb ligero recomendado (AppImage abajo)';
+        if (os === 'ios') return 'Dispositivo detectado: <strong>iOS / iPadOS</strong> · Disponible para Windows, macOS, Linux y Android abajo';
+        return 'Sistema detectado: <strong>Windows 10 / 11 (x64)</strong> · También para macOS / Linux / Android';
+      },
       layout: (id) => (id === '108' ? '108 Completo' : '65% Compacto'),
       orient: (o) => (o === 'viewer' ? 'Vista espectador' : 'Vista gato'),
       tailPickerBtn: (open, count) =>
@@ -1580,14 +1697,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': 'Baixar',
       'nav.features': 'Recursos',
       'nav.mcp': 'IA MCP',
-      'hero.eyebrow': 'Windows · macOS · Linux · Open Source',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Open Source',
       'hero.allPlatforms': 'Todas as plataformas',
       'hero.ghSource': 'Código no GitHub ›',
       'hero.spec1Lbl': 'Instalador nativo em Rust',
       'hero.spec2Val': '7 skins + MCP',
       'hero.spec2Lbl': 'Gatos & Garota-Baleia · Estúdio IA',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': 'Apple Silicon · Win7 · KylinOS',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · Android 8+',
       'pg.title': 'Motor web ao vivo · Digite ou faça carinho no gato',
       'pg.mode3d': '✨ Modo 3D',
       'pg.mode2d': '🎨 2D Clássico',
@@ -1636,6 +1753,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'Espelho oficial no GitHub ›',
       'dl.macName': 'macOS Universal (Apple Silicon e Intel)',
       'dl.macSub': 'macOS 10.15+ (Catalina ou superior) Universal DMG',
+      'dl.recommendedTag': 'Recomendado p/ você',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'App flutuante para Android (APK)',
+      'dl.androidSub': 'Android 8.0+ · APK oficial assinado',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ O navegador diz «não costuma ser baixado» ou o Windows SmartScreen apareceu?',
       'dl.tipBrewTitle': '🍺 Instalar no macOS via Homebrew (Recomendado)',
       'dl.tipMacTitle': '🍎 Guia da primeira abertura no macOS (só uma vez)',
@@ -1721,6 +1844,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         'Começa com o layout compacto 65% e cria atalhos na Área de Trabalho, Menu Iniciar e desinstalador. Clique com o botão direito quando quiser para <strong>108 teclas completo</strong>, <strong>teclas de cauda</strong>, fonte OBS e atualização em um clique.',
       'dl.macDesc':
         'DMG Universal nativo ARM64 + x86_64 compatível com Apple Silicon M1–M4 e Macs Intel (macOS 10.15 Catalina+). Inclui layouts 65%/108 teclas, os 6 gatos e BigFish. Abra o <code>.dmg</code> e arraste para Aplicativos.',
+            'dl.androidDesc':
+        'Pet flutuante sempre no topo para celular e tablet com <strong>6 gatos + BigFish</strong>, <strong>opacidade 20%–100%</strong>, ronronado real e som de teclado, carinho/segurar pela nuca, rotação automática e proteção em teclados de banco.',
       'dl.tipWinBody':
         'Como o KuroCat é software open-source gratuito sem certificado comercial EV de assinatura de código, Edge/Chrome pode exibir um aviso ao baixar (100% do código-fonte é público no GitHub):<br /><strong>① Edge</strong>: Passe o mouse no download → clique em <strong><code>···</code></strong> → <strong>Manter</strong> → seta para baixo <strong><code>▾</code> (Mostrar mais)</strong> → <strong>Manter mesmo assim</strong> (Chrome: aperte <code>Ctrl + J</code> → Manter arquivo perigoso → Manter mesmo assim).<br /><strong>② Windows SmartScreen</strong>: Clique em <strong>Mais informações</strong> → <strong>Executar assim mesmo</strong>.',
       'dl.tipBrewBody':
@@ -1834,6 +1959,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `Versão mais recente ${tag}`,
       heroDownloadWin: (size) => `Baixar para Windows (${size})`,
       heroDownloadMac: (size) => `Baixar para macOS (${size})`,
+      heroDownloadWin7: (size) => `Baixar para Windows 7 (${size})`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `Baixar Linux ARM64 (${size})` : `Baixar para Linux (${size})`,
+      heroDownloadAndroid: (size) => `Baixar APK Android (${size})`,
+      heroDownloadIos: () => 'Ver versões de PC e Android',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `Dispositivo detectado: <strong>Android</strong> · Toque para baixar o APK oficial (${size})`;
+        if (os === 'macos') return 'Sistema detectado: <strong>macOS (Apple Silicon e Intel)</strong> · Também para Win / Linux / Android';
+        if (os === 'win7') return 'Sistema detectado: <strong>Windows 7</strong> · Selecionada a edição portátil com WebView2 109';
+        if (os === 'linux-arm64') return 'Sistema detectado: <strong>Linux ARM64</strong> · Pacote .deb leve recomendado (AppImage abaixo)';
+        if (os === 'linux-x64') return 'Sistema detectado: <strong>Linux x86_64</strong> · Pacote .deb leve recomendado (AppImage abaixo)';
+        if (os === 'ios') return 'Dispositivo detectado: <strong>iOS / iPadOS</strong> · Disponível para Windows, macOS, Linux e Android abaixo';
+        return 'Sistema detectado: <strong>Windows 10 / 11 (x64)</strong> · Também para macOS / Linux / Android';
+      },
       layout: (id) => (id === '108' ? '108 Completo' : '65% Compacto'),
       orient: (o) => (o === 'viewer' ? 'Visão do público' : 'Visão do gato'),
       tailPickerBtn: (open, count) =>
@@ -1870,14 +2009,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': 'Скачать',
       'nav.features': 'Функции',
       'nav.mcp': 'ИИ MCP',
-      'hero.eyebrow': 'Windows · macOS · Linux · Open Source',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Open Source',
       'hero.allPlatforms': 'Все платформы',
       'hero.ghSource': 'Код на GitHub ›',
       'hero.spec1Lbl': 'Нативный установщик на Rust',
       'hero.spec2Val': '7 скинов + MCP',
       'hero.spec2Lbl': 'Коты и девушка-кит · ИИ-студия',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': 'Apple Silicon · Win7 · KylinOS',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · Android 8+',
       'pg.title': 'Живой веб-движок · Печатайте или гладьте кота',
       'pg.mode3d': '✨ 3D-режим',
       'pg.mode2d': '🎨 2D классика',
@@ -1926,6 +2065,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'Официальное зеркало GitHub ›',
       'dl.macName': 'macOS Universal (Apple Silicon и Intel)',
       'dl.macSub': 'macOS 10.15+ (Catalina и выше) Universal DMG',
+      'dl.recommendedTag': 'Для вашего устройства',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'Android-версия поверх окон (APK)',
+      'dl.androidSub': 'Android 8.0+ · Официальный APK',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ Браузер пишет «обычно не скачивается» или срабатывает Windows SmartScreen?',
       'dl.tipBrewTitle': '🍺 Установка на macOS через Homebrew (Рекомендуем)',
       'dl.tipMacTitle': '🍎 Первый запуск на macOS (делается один раз)',
@@ -2011,6 +2156,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         'По умолчанию запускается компактная 65%-клавиатура, создаются ярлыки на рабочем столе, в меню «Пуск» и деинсталлятор. По правому клику доступны <strong>полные 108 клавиш</strong>, <strong>свои клавиши хвоста</strong>, источник OBS и обновление в один клик.',
       'dl.macDesc':
         'Нативный универсальный DMG (ARM64 + x86_64) для Apple Silicon M1–M4 и Intel Mac (macOS 10.15 Catalina+). Включает раскладки 65%/108 клавиш, всех 6 котов и BigFish. Откройте <code>.dmg</code> и перетащите в «Программы».',
+            'dl.androidDesc':
+        'Плавающий питомец для Android-смартфонов и планшетов: <strong>6 котов + BigFish</strong>, <strong>прозрачность 20%–100%</strong>, живое мурлыканье и звуки клавиш, поглаживания и поднятие за шкирку, поворот экрана и защита паролей.',
       'dl.tipWinBody':
         'Поскольку KuroCat — бесплатное ПО с открытым кодом без коммерческого EV-сертификата подписи, Edge/Chrome может показать предупреждение при загрузке (100% исходного кода открыто на GitHub):<br /><strong>① Edge</strong>: Наведите на загрузку → нажмите <strong><code>···</code></strong> → <strong>Сохранить</strong> → стрелка вниз <strong><code>▾</code> (Показать больше)</strong> → <strong>Всё равно сохранить</strong> (Chrome: <code>Ctrl + J</code> → Сохранить опасный файл → Всё равно сохранить).<br /><strong>② Windows SmartScreen</strong>: Нажмите <strong>Подробнее</strong> → <strong>Выполнить в любом случае</strong>.',
       'dl.tipBrewBody':
@@ -2124,6 +2271,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `Последняя версия ${tag}`,
       heroDownloadWin: (size) => `Скачать для Windows (${size})`,
       heroDownloadMac: (size) => `Скачать для macOS (${size})`,
+      heroDownloadWin7: (size) => `Скачать для Windows 7 (${size})`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `Скачать Linux ARM64 (${size})` : `Скачать для Linux (${size})`,
+      heroDownloadAndroid: (size) => `Скачать APK для Android (${size})`,
+      heroDownloadIos: () => 'Смотреть сборки для ПК и Android',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `Определено устройство: <strong>Android</strong> · Нажмите для загрузки официального APK (${size})`;
+        if (os === 'macos') return 'Определена система: <strong>macOS (Apple Silicon и Intel)</strong> · Также есть Win / Linux / Android';
+        if (os === 'win7') return 'Определена система: <strong>Windows 7</strong> · Подобрана портативная сборка с WebView2 109';
+        if (os === 'linux-arm64') return 'Определена система: <strong>Linux ARM64</strong> · Рекомендован лёгкий .deb (AppImage ниже)';
+        if (os === 'linux-x64') return 'Определена система: <strong>Linux x86_64</strong> · Рекомендован лёгкий .deb (AppImage ниже)';
+        if (os === 'ios') return 'Определено устройство: <strong>iOS / iPadOS</strong> · Доступно для Windows, macOS, Linux и Android ниже';
+        return 'Определена система: <strong>Windows 10 / 11 (x64)</strong> · Также есть macOS / Linux / Android';
+      },
       layout: (id) => (id === '108' ? '108 полная' : '65% компакт'),
       orient: (o) => (o === 'viewer' ? 'Для зрителя' : 'От кота'),
       tailPickerBtn: (open, count) =>
@@ -2160,14 +2321,14 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'nav.download': 'Download',
       'nav.features': 'Funktionen',
       'nav.mcp': 'KI MCP',
-      'hero.eyebrow': 'Windows · macOS · Linux · Open Source',
+      'hero.eyebrow': 'Windows · macOS · Linux · Android · Open Source',
       'hero.allPlatforms': 'Alle Plattformen',
       'hero.ghSource': 'GitHub-Quellcode ›',
       'hero.spec1Lbl': 'Nativer Rust-Installer',
       'hero.spec2Val': '7 Skins + MCP',
       'hero.spec2Lbl': 'Katzen & Wal-Mädchen · KI-Studio',
-      'hero.spec3Val': 'Win / Mac / Linux',
-      'hero.spec3Lbl': 'Apple Silicon · Win7 · KylinOS',
+      'hero.spec3Val': 'Win / Mac / Linux / Android',
+      'hero.spec3Lbl': 'Apple Silicon · Win7 · Android 8+',
       'pg.title': 'Live-Web-Engine · Tippe oder streichle die Katze',
       'pg.mode3d': '✨ 3D-Modus',
       'pg.mode2d': '🎨 2D Klassik',
@@ -2216,6 +2377,12 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       'dl.ghBtn': 'Offizieller GitHub-Mirror ›',
       'dl.macName': 'macOS Universal (Apple Silicon & Intel)',
       'dl.macSub': 'macOS 10.15+ (Catalina oder neuer) Universal DMG',
+      'dl.recommendedTag': 'Für dein Gerät',
+      'dl.winTagDefault': 'Windows 10/11',
+      'dl.macTagDefault': 'Apple Silicon',
+      'dl.androidName': 'Android Schwebende Katze (APK)',
+      'dl.androidSub': 'Android 8.0+ · Signierte APK',
+      'dl.androidTagDefault': 'Android 8.0+',
       'dl.tipWinTitle': '🛡️ Browser warnt „wird nicht häufig heruntergeladen“ oder Windows SmartScreen erscheint?',
       'dl.tipBrewTitle': '🍺 Installation unter macOS mit Homebrew (Empfohlen)',
       'dl.tipMacTitle': '🍎 macOS-Erststart-Anleitung (einmalig)',
@@ -2301,6 +2468,8 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
         'Startet im kompakten 65%-Layout und erstellt Verknüpfungen für Desktop, Startmenü &amp; Deinstallation. Per Rechtsklick jederzeit umschaltbar auf <strong>108-Tasten-Vollformat</strong>, <strong>eigene Schwanztasten</strong>, OBS-Quelle &amp; 1-Klick-Update.',
       'dl.macDesc':
         'Natives Universal-DMG (ARM64 + x86_64) für Apple Silicon M1–M4 und Intel-Macs (macOS 10.15 Catalina+). Enthält 65%-/108-Tasten-Layouts, alle 6 Katzen &amp; BigFish. Einfach <code>.dmg</code> öffnen und in „Programme“ ziehen.',
+            'dl.androidDesc':
+        'Schwebender Android-Begleiter für Smartphone &amp; Tablet mit <strong>6 Katzen + BigFish</strong>, <strong>20%–100% Deckkraft</strong>, echtem Schnurren &amp; Tipp-Sounds, Streicheln/Nackengriff, Auto-Drehung und Sichtschutz bei Zahlungstastaturen.',
       'dl.tipWinBody':
         'Da KuroCat kostenlose Open-Source-Software ohne kostenpflichtiges EV-Code-Signing-Zertifikat ist, warnen Edge/Chrome gelegentlich beim Download (100% des Quellcodes sind öffentlich auf GitHub):<br /><strong>① Edge</strong>: Über den Download fahren → <strong><code>···</code></strong> klicken → <strong>Behalten</strong> → Pfeil nach unten <strong><code>▾</code> (Mehr anzeigen)</strong> → <strong>Trotzdem behalten</strong> (Chrome: <code>Ctrl + J</code> → Gefährliche Datei behalten → Trotzdem beibehalten).<br /><strong>② Windows SmartScreen</strong>: Auf <strong>Weitere Informationen</strong> → <strong>Trotzdem ausführen</strong> klicken.',
       'dl.tipBrewBody':
@@ -2414,6 +2583,20 @@ export const KUROCAT_I18N: Record<Locale, KuroCatI18nBundle> = {
       latestVersion: (tag) => `Aktuelle Version ${tag}`,
       heroDownloadWin: (size) => `Für Windows laden (${size})`,
       heroDownloadMac: (size) => `Für macOS laden (${size})`,
+      heroDownloadWin7: (size) => `Für Windows 7 laden (${size})`,
+      heroDownloadLinux: (size, arch) =>
+        arch === 'arm64' ? `Für Linux ARM64 laden (${size})` : `Für Linux laden (${size})`,
+      heroDownloadAndroid: (size) => `Android-APK laden (${size})`,
+      heroDownloadIos: () => 'PC- & Android-Builds ansehen',
+      heroOsHint: (os, size) => {
+        if (os === 'android') return `Gerät erkannt: <strong>Android</strong> · Tippen zum Laden der offiziellen APK (${size})`;
+        if (os === 'macos') return 'System erkannt: <strong>macOS (Apple Silicon &amp; Intel)</strong> · Auch für Win / Linux / Android';
+        if (os === 'win7') return 'System erkannt: <strong>Windows 7</strong> · Automatisch gewählt: portables WebView2-109-Paket';
+        if (os === 'linux-arm64') return 'System erkannt: <strong>Linux ARM64</strong> · Empfohlenes schlankes .deb (AppImage unten)';
+        if (os === 'linux-x64') return 'System erkannt: <strong>Linux x86_64</strong> · Empfohlenes schlankes .deb (AppImage unten)';
+        if (os === 'ios') return 'Gerät erkannt: <strong>iOS / iPadOS</strong> · Verfügbar für Windows, macOS, Linux &amp; Android unten';
+        return 'System erkannt: <strong>Windows 10 / 11 (x64)</strong> · Auch für macOS / Linux / Android';
+      },
       layout: (id) => (id === '108' ? '108 Vollformat' : '65% Kompakt'),
       orient: (o) => (o === 'viewer' ? 'Zuschauersicht' : 'Katzensicht'),
       tailPickerBtn: (open, count) =>

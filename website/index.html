@@ -268,7 +268,7 @@
         <div class="hero-badge-row">
           <img class="hero-app-icon" src="/assets/kurocat-icon.png" alt="KuroCat 图标" data-i18n-alt="hero.iconAlt" width="56" height="56" />
           <div>
-            <div class="eyebrow" style="margin-bottom:4px;" data-i18n="hero.eyebrow">Windows · macOS · Linux · Open Source</div>
+            <div class="eyebrow" style="margin-bottom:4px;" data-i18n="hero.eyebrow">Windows · macOS · Linux · Android · Open Source</div>
             <div class="hero-meta-line">
               <span class="live-dot"></span>
               <span id="hero-release-label">最新版本 v5.1.3</span>
@@ -299,6 +299,7 @@
             GitHub 源码 ›
           </a>
         </div>
+        <p class="hero-os-hint" id="hero-os-hint" aria-live="polite"></p>
 
         <div class="hero-specs">
           <div class="hero-spec-item">
@@ -310,8 +311,8 @@
             <div class="spec-lbl" data-i18n="hero.spec2Lbl">猫咪 &amp; 鲸鱼娘 · AI 定制</div>
           </div>
           <div class="hero-spec-item">
-            <div class="spec-val" data-i18n="hero.spec3Val">Win / Mac / Linux</div>
-            <div class="spec-lbl" data-i18n="hero.spec3Lbl">支持 Apple Silicon · Win7 · 麒麟</div>
+            <div class="spec-val" data-i18n="hero.spec3Val">Win / Mac / Linux / Android</div>
+            <div class="spec-lbl" data-i18n="hero.spec3Lbl">Apple Silicon · Win7 · 麒麟 · Android 8+</div>
           </div>
         </div>
       </div>
@@ -445,7 +446,7 @@
 
       <div class="download-grid">
         <!-- Card 1: Windows 65% Setup -->
-        <article class="dl-card featured">
+        <article class="dl-card featured" data-dl-card="win" id="windows-download">
           <div class="dl-card-top">
             <div class="dl-platform">
               <span class="platform-icon">🪟</span>
@@ -454,7 +455,7 @@
                 <div class="dl-sub" data-i18n="dl.winSub">Windows 10 / 11 (x64)</div>
               </div>
             </div>
-            <span class="dl-tag tag-lime" data-i18n="dl.winTag">推荐</span>
+            <span class="dl-tag tag-lime" data-dl-tag="win" data-i18n="dl.winTag">推荐</span>
           </div>
           <p class="dl-desc" data-i18n-html="dl.winDesc">
             开箱即 65% 紧凑机械键盘，自动创建桌面 <code>KuroCat</code> 图标、开始菜单与系统卸载入口；右键随时可一键切换 <strong>108 键全尺寸小键盘</strong>与内置自更新。
@@ -474,7 +475,7 @@
         </article>
 
         <!-- Card 2: macOS Universal -->
-        <article class="dl-card">
+        <article class="dl-card" data-dl-card="macos" id="macos-download">
           <div class="dl-card-top">
             <div class="dl-platform">
               <span class="platform-icon">🍎</span>
@@ -483,7 +484,7 @@
                 <div class="dl-sub" data-i18n="dl.macSub">macOS 10.15+ (Catalina 及以上) Universal DMG</div>
               </div>
             </div>
-            <span class="dl-tag tag-subtle">Apple Silicon</span>
+            <span class="dl-tag tag-subtle" data-dl-tag="macos" data-i18n="dl.macTagDefault">Apple Silicon</span>
           </div>
           <p class="dl-desc" data-i18n-html="dl.macDesc">
             原生编译 ARM64 + x86_64 通用镜像，兼容 M1/M2/M3/M4 与老款 Intel Mac（macOS 10.15 Catalina 及以上），内置 65% / 108 键、6 款猫咪与大肥鱼皮肤。打开 <code>.dmg</code> 拖入「应用程序」即可运行。
@@ -497,6 +498,35 @@
               高速直链下载
             </a>
             <a class="dl-alt-link" data-dl-gh="macos" href="https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg" target="_blank" rel="noopener" data-i18n="dl.ghBtn">
+              GitHub 官方源 ›
+            </a>
+          </div>
+        </article>
+
+        <!-- Card 3: Android APK -->
+        <article class="dl-card" data-dl-card="android" id="android-download">
+          <div class="dl-card-top">
+            <div class="dl-platform">
+              <span class="platform-icon">📱</span>
+              <div>
+                <div class="dl-name" data-i18n="dl.androidName">Android 手机 / 平板悬浮版</div>
+                <div class="dl-sub" data-i18n="dl.androidSub">Android 8.0+ 官方签名 APK</div>
+              </div>
+            </div>
+            <span class="dl-tag tag-subtle" data-dl-tag="android" data-i18n="dl.androidTagDefault">Android 8.0+</span>
+          </div>
+          <p class="dl-desc" data-i18n-html="dl.androidDesc">
+            原生悬浮置顶桌宠，同步 <strong>6 款猫咪 + 大肥鱼</strong>、<strong>20%–100% 不透明度</strong>、真猫呼噜与打字键鼠音效，支持摸头/点鼻/挠下巴/揪尾巴/拎后颈摇晃、横竖屏自适应与支付键盘自动闭眼防偷窥。
+          </p>
+          <div class="dl-meta">
+            <span class="dl-filename" data-asset-name="android">KuroCat-v5.1.3-android.apk</span>
+            <span class="dl-size" data-asset-size="android">5.17 MB</span>
+          </div>
+          <div class="dl-actions">
+            <a class="btn-solid btn-full" data-dl-primary="android" href="/releases/v5.1.3/KuroCat-v5.1.3-android.apk" download data-i18n="dl.primaryBtn">
+              高速直链下载
+            </a>
+            <a class="dl-alt-link" data-dl-gh="android" href="https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-android.apk" target="_blank" rel="noopener" data-i18n="dl.ghBtn">
               GitHub 官方源 ›
             </a>
           </div>

@@ -248,4 +248,4 @@ npm run tauri:build
 [MIT License](LICENSE)로 완전 무료·오픈소스 배포됩니다. 작업이나 방송에 즐거움을 더했다면 ⭐ Star로 응원해 주세요!
 
 - **🐳 고래소녀 (BigFish)** 리소스는 MIT 라이선스 프로젝트 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet) ([QCYTSN/dsh-dafeiyu](https://github.com/QCYTSN/dsh-dafeiyu) 파생)을 기반으로 제작되었습니다 (`src/assets/dafeiyu/LICENSE-MIT.txt`).
-- **기여자**: [@XYZliang](https://github.com/XYZliang), [@CandySunPlus](https://github.com/CandySunPlus) (#51), [@Jack-GPT](https://github.com/Jack-GPT) (#47, #64), [@Mangome](https://github.com/Mangome) (#67, #68), [@Zyred9](https://github.com/Zyred9) (#48), [@bj-wangxiaoxiao](https://github.com/bj-wangxiaoxiao) (#65), [@hacksmo](https://github.com/hacksmo) (#45), [@LiMuhua](https://github.com/LiMuhua) (#75) 님께 감사드립니다.
+- **기여자**: [@XYZliang](https://github.com/XYZliang), [@CandySunPlus](https://github.com/CandySunPlus) (#51), [@Jack-GPT](https://github.com/Jack-GPT) (#47, #64), [@Mangome](https://github.com/Mangome) (#67, #68), [@Zyred9](https://github.com/Zyred9) (#42, #48), [@bj-wangxiaoxiao](https://github.com/bj-wangxiaoxiao) (#65), [@hacksmo](https://github.com/hacksmo) (#45), [@LiMuhua](https://github.com/LiMuhua) (#75) 님께 감사드립니다.

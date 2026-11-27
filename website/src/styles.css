@@ -543,6 +543,23 @@ main {
   flex-wrap: wrap;
 }
 
+.hero-os-hint {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  min-height: 19px;
+}
+
+.hero-os-hint strong {
+  color: var(--lime);
+  font-weight: 600;
+}
+
+.hero-os-hint:empty {
+  display: none;
+}
+
 /* Buttons */
 .btn-lime {
   display: inline-flex;
@@ -1205,8 +1222,8 @@ main {
 /* Download Hub */
 .download-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .dl-card {
@@ -1214,7 +1231,7 @@ main {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 22px;
-  padding: 28px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1227,8 +1244,25 @@ main {
 }
 
 .dl-card.featured {
-  border-color: rgba(212, 240, 68, 0.34);
-  background: linear-gradient(180deg, rgba(212, 240, 68, 0.045) 0%, var(--surface) 60%);
+  order: -1;
+  border-color: rgba(212, 240, 68, 0.38);
+  background: linear-gradient(180deg, rgba(212, 240, 68, 0.055) 0%, var(--surface) 60%);
+  box-shadow: 0 0 0 1px rgba(212, 240, 68, 0.12);
+}
+
+.macos-tip-card.os-recommended {
+  border-color: rgba(212, 240, 68, 0.42);
+  background: linear-gradient(180deg, rgba(212, 240, 68, 0.06) 0%, var(--surface) 75%);
+  box-shadow: 0 0 0 1px rgba(212, 240, 68, 0.14);
+}
+
+@media (max-width: 1040px) {
+  .download-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dl-card.featured {
+    grid-column: 1 / -1;
+  }
 }
 
 .dl-card-top {

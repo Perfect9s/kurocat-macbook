@@ -557,11 +557,12 @@ th { color: var(--sub); font-size: 12px; font-weight: 650; white-space: nowrap; 
 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .mini-card {
   padding: 18px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  min-width: 0; max-width: 100%;
 }
 .mini-card h3 { margin-top: 0; font-size: 15px; }
 .code-box {
   position: relative; background: #0d1017; border: 1px solid var(--border);
-  border-radius: 14px; padding: 14px 16px; overflow-x: auto; margin: 10px 0 14px;
+  border-radius: 14px; padding: 14px 76px 14px 16px; overflow-x: auto; max-width: 100%; margin: 10px 0 14px;
 }
 .code-box pre { margin: 0; font-size: 12.5px; color: #dbe7ff; line-height: 1.55; white-space: pre; }
 .copy-btn {
@@ -594,11 +595,28 @@ footer {
 .footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
 .footer-links a { color: var(--sub); text-decoration: none; }
 .footer-links a:hover { color: var(--lime); }
+.rec-banner {
+  border-color: rgba(212, 240, 68, 0.38);
+  background: linear-gradient(135deg, rgba(212, 240, 68, 0.085) 0%, var(--surface) 62%);
+  display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+}
+.rec-banner-copy { flex: 1 1 320px; min-width: 0; }
+.rec-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; color: var(--lime); background: rgba(212, 240, 68, 0.14);
+  border: 1px solid rgba(212, 240, 68, 0.34); margin-bottom: 8px;
+}
+.rec-banner h2 { margin: 0 0 6px; font-size: 19px; }
+.rec-banner p { margin: 0; font-size: 13.5px; color: var(--sub); }
+.rec-banner-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+tr.row-recommended td { background: rgba(212, 240, 68, 0.065); }
+tr.row-recommended td:first-child { box-shadow: inset 3px 0 0 var(--lime); }
 @media (max-width: 780px) {
   .grid-2, .grid-3, .related-grid { grid-template-columns: 1fr; }
   .hero, .card { padding: 20px 18px; }
   .nav-right { width: 100%; justify-content: space-between; }
   .lang-menu { right: 0; max-width: calc(100vw - 24px); }
+  .rec-banner-actions { width: 100%; align-items: stretch; }
 }
 `;
 
@@ -1151,10 +1169,21 @@ function buildDownloadPage(locale, today) {
     },
   }[locale];
 
+  const recI18n = {
+    zh: { badge: '已自动识别你的设备', iosTitle: '已检测到 iOS / iPadOS 设备', iosDesc: '当前提供 Windows / macOS / Linux / Android 安装包，请在电脑或安卓手机下载。', dlBtn: '立即高速下载', ghBtn: 'GitHub 官方源 ›' },
+    en: { badge: 'Recommended for Your Device', iosTitle: 'iOS / iPadOS Detected', iosDesc: 'KuroCat currently ships for Windows, macOS, Linux & Android — pick your device build below.', dlBtn: 'Fast CDN Download', ghBtn: 'GitHub Mirror ›' },
+    ja: { badge: 'お使いの端末におすすめ', iosTitle: 'iOS / iPadOS を検出しました', iosDesc: '現在 Windows / macOS / Linux / Android 版を提供しています。PC または Android 端末からダウンロードしてください。', dlBtn: '高速ダウンロード', ghBtn: 'GitHub 公式 ›' },
+    ko: { badge: '내 기기 자동 추천', iosTitle: 'iOS / iPadOS 기기 감지됨', iosDesc: '현재 Windows / macOS / Linux / Android 버전을 제공합니다. PC 또는 안드로이드 기기에서 다운로드해 주세요.', dlBtn: '고속 직링크 다운로드', ghBtn: 'GitHub 공식 ›' },
+    es: { badge: 'Recomendado para tu dispositivo', iosTitle: 'iOS / iPadOS detectado', iosDesc: 'KuroCat está disponible actualmente para Windows, macOS, Linux y Android en la tabla inferior.', dlBtn: 'Descarga rápida CDN', ghBtn: 'GitHub oficial ›' },
+    pt: { badge: 'Recomendado para seu dispositivo', iosTitle: 'iOS / iPadOS detectado', iosDesc: 'O KuroCat está disponível para Windows, macOS, Linux e Android na lista abaixo.', dlBtn: 'Download rápido CDN', ghBtn: 'GitHub oficial ›' },
+    ru: { badge: 'Подобрано для вашего устройства', iosTitle: 'Обнаружено устройство iOS / iPadOS', iosDesc: 'Сейчас доступны сборки для Windows, macOS, Linux и Android — выберите нужную ниже.', dlBtn: 'Быстрая загрузка CDN', ghBtn: 'GitHub Releases ›' },
+    de: { badge: 'Für dein Gerät empfohlen', iosTitle: 'iOS / iPadOS erkannt', iosDesc: 'KuroCat ist derzeit für Windows, macOS, Linux und Android in der Liste unten verfügbar.', dlBtn: 'Schneller CDN-Download', ghBtn: 'GitHub Releases ›' },
+  }[locale];
+
   const rows = VERIFIED_ASSETS.map((a) => {
     const cdnUrl = `/releases/${RELEASE_VERSION}/${a.file}`;
     const ghUrl = `https://github.com/qianyiai/KuroCat/releases/download/${RELEASE_VERSION}/${a.file}`;
-    return `<tr>
+    return `<tr data-asset-key="${esc(a.key)}">
             <td><strong>${esc(a.platform[locale])}</strong><br /><span style="font-size:12px;color:var(--dim)">${esc(a.desc[locale])}</span></td>
             <td><code>${esc(a.file)}</code><span class="sha">${esc(a.sha256)}</span></td>
             <td style="white-space:nowrap">${esc(a.size)}</td>
@@ -1167,10 +1196,36 @@ function buildDownloadPage(locale, today) {
           </tr>`;
   }).join('\n          ');
 
+  const recAssetMap = Object.fromEntries(
+    VERIFIED_ASSETS.map((a) => [
+      a.key,
+      {
+        platform: a.platform[locale],
+        desc: a.desc[locale],
+        file: a.file,
+        size: a.size,
+        cdnUrl: `/releases/${RELEASE_VERSION}/${a.file}`,
+        ghUrl: `https://github.com/qianyiai/KuroCat/releases/download/${RELEASE_VERSION}/${a.file}`,
+      },
+    ]),
+  );
+
   const brewCmd = 'brew install --cask qianyiai/tap/kurocat';
   const xattrCmd = 'xattr -cr /Applications/KuroCat.app && open /Applications/KuroCat.app';
 
   const bodyHtml = `
+    <section class="card rec-banner" id="dl-auto-recommend">
+      <div class="rec-banner-copy">
+        <span class="rec-pill" id="rec-os-badge">✨ ${esc(recI18n.badge)}</span>
+        <h2 id="rec-os-title">${esc(VERIFIED_ASSETS[0].platform[locale])}</h2>
+        <p id="rec-os-desc">${esc(VERIFIED_ASSETS[0].desc[locale])} · <code>${esc(VERIFIED_ASSETS[0].file)}</code> (${esc(VERIFIED_ASSETS[0].size)})</p>
+      </div>
+      <div class="rec-banner-actions" id="rec-os-actions">
+        <a class="btn btn-lime" id="rec-os-cdn" href="/releases/${RELEASE_VERSION}/${VERIFIED_ASSETS[0].file}" download>${esc(recI18n.dlBtn)} (${esc(VERIFIED_ASSETS[0].size)})</a>
+        <a class="btn btn-sm" id="rec-os-gh" href="https://github.com/qianyiai/KuroCat/releases/download/${RELEASE_VERSION}/${VERIFIED_ASSETS[0].file}" target="_blank" rel="noopener">${esc(recI18n.ghBtn)}</a>
+      </div>
+    </section>
+
     <section class="card" id="files">
       <h2>${esc(copy.tblTitle)}</h2>
       <div class="table-wrap">
@@ -1184,6 +1239,56 @@ function buildDownloadPage(locale, today) {
         </table>
       </div>
     </section>
+
+    <script>
+      (function () {
+        var ASSETS = ${JSON.stringify(recAssetMap)};
+        var I18N = ${JSON.stringify(recI18n)};
+        function detectKey() {
+          try {
+            var p = (new URLSearchParams(location.search).get('os') || '').trim().toLowerCase();
+            if (p === 'android') return 'android';
+            if (p === 'ios' || p === 'iphone' || p === 'ipad') return 'ios';
+            if (p === 'mac' || p === 'macos') return 'macos';
+            if (p === 'win7') return 'win7';
+            if (p === 'win' || p === 'windows') return 'win64';
+            if (p === 'linux-arm64' || p === 'arm64') return 'linux-arm64-deb';
+            if (p === 'linux' || p === 'linux-x64') return 'linux-x64-deb';
+          } catch (e) {}
+          var ua = navigator.userAgent || '';
+          var plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+          var all = ua + ' ' + plat;
+          if (/Android/i.test(all)) return 'android';
+          if (/iPhone|iPad|iPod/i.test(all) || (/MacIntel/i.test(navigator.platform || '') && navigator.maxTouchPoints > 1)) return 'ios';
+          if (/Windows NT 6\\.[123]/i.test(ua)) return 'win7';
+          if (/Win/i.test(plat) || /Windows/i.test(ua)) return 'win64';
+          if (/Mac|Macintosh/i.test(all)) return 'macos';
+          if (/Linux|X11/i.test(all)) return /aarch64|arm64|armv8/i.test(all) ? 'linux-arm64-deb' : 'linux-x64-deb';
+          return 'win64';
+        }
+        var key = detectKey();
+        var titleEl = document.getElementById('rec-os-title');
+        var descEl = document.getElementById('rec-os-desc');
+        var cdnEl = document.getElementById('rec-os-cdn');
+        var ghEl = document.getElementById('rec-os-gh');
+        var actionsEl = document.getElementById('rec-os-actions');
+        var heroCta = document.querySelector('.hero .cta-row .btn-lime');
+        if (key === 'ios') {
+          if (titleEl) titleEl.textContent = I18N.iosTitle;
+          if (descEl) descEl.textContent = I18N.iosDesc;
+          if (actionsEl) actionsEl.style.display = 'none';
+          return;
+        }
+        var item = ASSETS[key] || ASSETS.win64;
+        if (titleEl) titleEl.textContent = item.platform;
+        if (descEl) descEl.innerHTML = item.desc + ' · <code>' + item.file + '</code> (' + item.size + ')';
+        if (cdnEl) { cdnEl.href = item.cdnUrl; cdnEl.textContent = I18N.dlBtn + ' (' + item.size + ')'; }
+        if (ghEl) { ghEl.href = item.ghUrl; }
+        if (heroCta) { heroCta.href = item.cdnUrl; heroCta.setAttribute('download', ''); heroCta.textContent = item.platform + ' · ' + item.size; }
+        var tr = document.querySelector('tr[data-asset-key="' + key + '"]');
+        if (tr) tr.classList.add('row-recommended');
+      })();
+    </script>
 
     <section class="card">
       <h2>${esc(copy.brewTitle)}</h2>
