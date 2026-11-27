@@ -15,12 +15,14 @@
 
   <p>
     <a href="https://kurocat.org/"><img src="https://img.shields.io/badge/Website-kurocat.org-d4f044?style=flat-square&logo=googlechrome&logoColor=111" alt="Official Website" /></a>
+    <a href="https://pan.quark.cn/s/673684ea4103"><img src="https://img.shields.io/badge/%E5%A4%B8%E5%85%8B%E7%BD%91%E7%9B%98-Win%20%7C%20Mac%20%7C%20Android-2563eb?style=flat-square&logo=icloud&logoColor=fff" alt="夸克网盘官方下载" /></a>
     <a href="https://github.com/qianyiai/KuroCat/releases/latest"><img src="https://img.shields.io/github/v/release/qianyiai/KuroCat?style=flat-square&color=38bdf8" alt="Latest Release" /></a>
     <a href="https://github.com/qianyiai/KuroCat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/qianyiai/KuroCat?style=flat-square&color=22c55e" alt="MIT License" /></a>
     <img src="https://img.shields.io/badge/Platform-Win11%2F10%2F7%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-818cf8?style=flat-square" alt="Cross Platform" />
   </p>
 
   <p>
+    <a href="https://pan.quark.cn/s/673684ea4103"><strong>☁️ 夸克网盘高速下载（Win/Mac/安卓）</strong></a> &nbsp;·&nbsp;
     <a href="https://kurocat.org/"><strong>🌐 官网在线试玩</strong></a> &nbsp;·&nbsp;
     <a href="https://kurocat.org/download/"><strong>📥 官方下载与校验</strong></a> &nbsp;·&nbsp;
     <a href="https://kurocat.org/vs/bongo-cat/"><strong>⚡ vs Bongo Cat</strong></a> &nbsp;·&nbsp;
@@ -29,8 +31,13 @@
     <a href="https://github.com/qianyiai/homebrew-tap"><strong>🍺 Homebrew</strong></a>
   </p>
 
-  <sub>🔒 唯一官方渠道：<a href="https://kurocat.org/"><strong>kurocat.org（唯一官网）</strong></a> · <a href="https://github.com/qianyiai/KuroCat">GitHub</a> · <a href="https://github.com/qianyiai/homebrew-tap">Homebrew Tap</a> · <a href="https://kurocat.org/security/">防伪安全公告</a></sub>
+  <sub>🔒 唯一官方渠道：<a href="https://kurocat.org/"><strong>kurocat.org（唯一官网）</strong></a> · <a href="https://pan.quark.cn/s/673684ea4103"><strong>夸克网盘（KuroCat 谦一_官方）</strong></a> · <a href="https://github.com/qianyiai/KuroCat">GitHub</a> · <a href="https://github.com/qianyiai/homebrew-tap">Homebrew Tap</a> · <a href="https://kurocat.org/security/">防伪安全公告</a></sub>
 </div>
+
+> [!TIP]
+> **☁️ 官方夸克网盘高速分流（内含 Windows / macOS / Android 安装包）**
+>
+> 国内用户推荐优先从官方分享文件夹 [**「KuroCat 谦一_官方」→ 点此打开夸克网盘获取**](https://pan.quark.cn/s/673684ea4103)（打开「夸克网盘 APP」也可复制口令 `/~f3813cZv6O~:/` 直达）。不限速一站打包，点开获取即可免费支持作者持续开源维护！
 
 > [!CAUTION]
 > **官方渠道声明与安全警示（谨防假冒木马站点 `kurocat.net`）**
@@ -82,12 +89,13 @@
 
 | 平台 | 推荐版本 | 体积 | 下载链接 |
 | --- | --- | :---: | --- |
-| **🪟 Windows 10 / 11** | x64 经典安装版（内置 65% / 108 键切换） | 2.40 MB | [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-5.1.3-x64-setup.exe) · [**国内高速**](https://kurocat.org/#download) |
-| **🍎 macOS 10.15+** | Apple Silicon (M1–M4) & Intel 通用 DMG | 6.57 MB | [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) · [**国内高速**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) |
+| **🪟 Windows 10 / 11** | x64 经典安装版（内置 65% / 108 键切换） | 2.40 MB | [**☁️ 夸克网盘**](https://pan.quark.cn/s/673684ea4103) · [**国内高速**](https://kurocat.org/#download) · [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-5.1.3-x64-setup.exe) |
+| **🍎 macOS 10.15+** | Apple Silicon (M1–M4) & Intel 通用 DMG | 6.57 MB | [**☁️ 夸克网盘**](https://pan.quark.cn/s/673684ea4103) · [**国内高速**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) · [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) |
 | **🐧 Linux (x86_64)** | Ubuntu 22.04+ / Debian 12+ / 麒麟 V11+ | 2.66 MB | [**`.deb`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-amd64.deb) · [**`.AppImage`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-amd64.AppImage) · [**国内高速**](https://kurocat.org/#linux-download) |
 | **🐧 Linux (ARM64)** | 飞腾 / 鲲鹏 / 麒麟 V11+ / 树莓派 | 2.62 MB | [**`.deb`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-arm64.deb) · [**`.AppImage`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-arm64.AppImage) · [**国内高速**](https://kurocat.org/#linux-download) |
-| **🖥️ Windows 7 SP1** | 64 位离线兼容绿包（内置 WebView2 109） | 179.3 MB | [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) · [**国内高速**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) |
-| **🤖 Android** | Android 客户端 APK | 5.17 MB | [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-android.apk) · [**国内高速**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-android.apk) |
+| **🖥️ Windows 7 SP1 (64 位)** | 64 位离线兼容绿包（内置 WebView2 109） | 179.3 MB | [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) · [**国内高速**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) |
+| **🖥️ Windows 7 SP1 (32 位)** | 32 位离线兼容绿包（内置 WebView2 109） | 159.4 MB | [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-win7-x86-portable.zip) · [**国内高速**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-win7-x86-portable.zip) |
+| **🤖 Android** | Android 客户端 APK | 5.17 MB | [**☁️ 夸克网盘**](https://pan.quark.cn/s/673684ea4103) · [**国内高速**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-android.apk) · [**GitHub 官方源**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-android.apk) |
 
 **🍺 macOS Homebrew 一键安装**（推荐，自动清理隔离属性、免手动 `xattr`）：
 

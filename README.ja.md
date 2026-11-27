@@ -15,12 +15,14 @@
 
   <p>
     <a href="https://kurocat.org/ja/"><img src="https://img.shields.io/badge/Website-kurocat.org-d4f044?style=flat-square&logo=googlechrome&logoColor=111" alt="Official Website" /></a>
+    <a href="https://pan.quark.cn/s/673684ea4103"><img src="https://img.shields.io/badge/Quark_Drive-Win%20%7C%20Mac%20%7C%20Android-2563eb?style=flat-square&logo=icloud&logoColor=fff" alt="Official Quark Drive Mirror" /></a>
     <a href="https://github.com/qianyiai/KuroCat/releases/latest"><img src="https://img.shields.io/github/v/release/qianyiai/KuroCat?style=flat-square&color=38bdf8" alt="Latest Release" /></a>
     <a href="https://github.com/qianyiai/KuroCat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/qianyiai/KuroCat?style=flat-square&color=22c55e" alt="MIT License" /></a>
     <img src="https://img.shields.io/badge/Platform-Win11%2F10%2F7%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-818cf8?style=flat-square" alt="Cross Platform" />
   </p>
 
   <p>
+    <a href="https://pan.quark.cn/s/673684ea4103"><strong>☁️ Quark クラウド（Win/Mac/Android）</strong></a> &nbsp;·&nbsp;
     <a href="https://kurocat.org/ja/"><strong>🌐 公式サイト＆3D体験</strong></a> &nbsp;·&nbsp;
     <a href="https://kurocat.org/ja/download/"><strong>📥 公式ダウンロード</strong></a> &nbsp;·&nbsp;
     <a href="https://kurocat.org/ja/vs/bongo-cat/"><strong>⚡ vs Bongo Cat</strong></a> &nbsp;·&nbsp;
@@ -29,8 +31,13 @@
     <a href="https://github.com/qianyiai/homebrew-tap"><strong>🍺 Homebrew</strong></a>
   </p>
 
-  <sub>🔒 唯一の公式チャネル：<a href="https://kurocat.org/ja/"><strong>kurocat.org（公式サイト）</strong></a> · <a href="https://github.com/qianyiai/KuroCat">GitHub</a> · <a href="https://github.com/qianyiai/homebrew-tap">Homebrew Tap</a> · <a href="https://kurocat.org/ja/security/">偽サイト警告</a></sub>
+  <sub>🔒 唯一の公式チャネル：<a href="https://kurocat.org/ja/"><strong>kurocat.org（公式サイト）</strong></a> · <a href="https://pan.quark.cn/s/673684ea4103"><strong>Quark クラウド（公式フォルダ）</strong></a> · <a href="https://github.com/qianyiai/KuroCat">GitHub</a> · <a href="https://github.com/qianyiai/homebrew-tap">Homebrew Tap</a> · <a href="https://kurocat.org/ja/security/">偽サイト警告</a></sub>
 </div>
+
+> [!TIP]
+> **☁️ 公式 Quark クラウド高速ミラー（Windows / macOS / Android 同梱）**
+>
+> 公式フォルダ [**「KuroCat 谦一_官方」を Quark クラウドで開く →**](https://pan.quark.cn/s/673684ea4103)（アプリ共有コード：`/~f3813cZv6O~:/`）。開くだけで無料オープンソース開発の応援になります！
 
 > [!CAUTION]
 > **公式サイトのご案内および偽サイト `kurocat.net` に関するセキュリティ警告**
@@ -82,12 +89,13 @@
 
 | プラットフォーム | 推奨パッケージ | サイズ | ダウンロード |
 | --- | --- | :---: | --- |
-| **🪟 Windows 10 / 11** | x64 インストーラー（65% / 108 キー切替内蔵） | 2.40 MB | [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-5.1.3-x64-setup.exe) · [**高速 CDN**](https://kurocat.org/ja/#download) |
-| **🍎 macOS 10.15+** | Apple Silicon (M1–M4) &amp; Intel ユニバーサル DMG | 6.57 MB | [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) · [**高速 CDN**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) |
+| **🪟 Windows 10 / 11** | x64 インストーラー（65% / 108 キー切替内蔵） | 2.40 MB | [**☁️ Quark**](https://pan.quark.cn/s/673684ea4103) · [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-5.1.3-x64-setup.exe) · [**高速 CDN**](https://kurocat.org/ja/#download) |
+| **🍎 macOS 10.15+** | Apple Silicon (M1–M4) &amp; Intel ユニバーサル DMG | 6.57 MB | [**☁️ Quark**](https://pan.quark.cn/s/673684ea4103) · [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) · [**高速 CDN**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-macos-universal.dmg) |
 | **🐧 Linux (x86_64)** | Ubuntu 22.04+ / Debian 12+ | 2.66 MB | [**`.deb`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-amd64.deb) · [**`.AppImage`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-amd64.AppImage) · [**高速 CDN**](https://kurocat.org/ja/#linux-download) |
 | **🐧 Linux (ARM64)** | ARM64 / Raspberry Pi | 2.62 MB | [**`.deb`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-arm64.deb) · [**`.AppImage`**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-linux-arm64.AppImage) · [**高速 CDN**](https://kurocat.org/ja/#linux-download) |
-| **🖥️ Windows 7 SP1** | x64 ポータブル（オフライン WebView2 109 同梱） | 179.3 MB | [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) · [**高速 CDN**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) |
-| **🤖 Android** | Android APK | 5.17 MB | [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-android.apk) · [**高速 CDN**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-android.apk) |
+| **🖥️ Windows 7 SP1 (64bit)** | x64 ポータブル（オフライン WebView2 109 同梱） | 179.3 MB | [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) · [**高速 CDN**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-win7-x64-portable.zip) |
+| **🖥️ Windows 7 SP1 (32bit)** | x86 ポータブル（オフライン WebView2 109 同梱） | 159.4 MB | [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-win7-x86-portable.zip) · [**高速 CDN**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-win7-x86-portable.zip) |
+| **🤖 Android** | Android APK | 5.17 MB | [**☁️ Quark**](https://pan.quark.cn/s/673684ea4103) · [**GitHub**](https://github.com/qianyiai/KuroCat/releases/download/v5.1.3/KuroCat-v5.1.3-android.apk) · [**高速 CDN**](https://kurocat.org/releases/v5.1.3/KuroCat-v5.1.3-android.apk) |
 
 **🍺 macOS Homebrew ワンライン導入**（推奨・隔離属性を自動解除するため手動 `xattr` 不要）：
 
